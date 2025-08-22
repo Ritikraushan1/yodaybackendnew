@@ -21,7 +21,7 @@ app.use(morgan("combined", { stream: logStream }));
 connectDB();
 
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", message: "Server is running" });
+  res.json({ status: "ok", message: "Server is running fine" });
 });
 
 app.use("/api", apiApp);
