@@ -1,8 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const { findUserByMobile, registerNewUser } = require("../models/authModel");
-const { sendOtp } = require("../utils/otpUtil");
-
-const generateOtp = () => Math.floor(100000 + Math.random() * 900000);
+const { sendOtp, verifyOtp } = require("../utils/otpUtil");
 
 const registerUser = async (req, res) => {
   console.log("👉 Auth controller login hit");
@@ -71,21 +69,82 @@ const registerUser = async (req, res) => {
       message: "Something went wrong on our side. Please try again later.",
     });
   }
-
-  // For now, just a mock response
-  res.json({ message: "Login logic will go here 🚀" });
 };
 
-const resendOtp = (req, res) => {
+const resendOtp = async (req, res) => {
   console.log("👉 Auth controller login hit");
   console.log("Request body:", req.body);
+  const { country_code, mobile_number } = req.body;
 
-  // For now, just a mock response
-  res.json({ message: "Login logic will go here 🚀" });
+  if (!mobile_number) {
+    return res.status(400).json({
+      success: false,
+      message: "Mobile number is required",
+    });
+  }
+  const { success, user, status, message } = await findUserByMobile(
+    mobile_number
+  );
+
+  if (!user) {
+    return res.status(400).json({
+      success: false,
+      message: "No user found with this mobile number",
+    });
+  } else {
+    const otpResult = await sendOtp({ mobile_number, country_code });
+
+    if (otpResult.status !== "success") {
+      return res
+        .status(500)
+        .json({ success: false, message: otpResult.message });
+    }
+    return res.status(200).json({
+      success: true,
+      new_registration: false,
+      transaction_id: otpResult.transaction_id,
+      otp: otpResult.otp,
+      message: `Welcome! An OTP has been sent to ${country_code}-${mobile_number} for verification.`,
+    });
+  }
 };
 
-const verifyOtp = (req, res) => {
-  res.json({ message: "Login logic will go here 🚀" });
+const verifyOtpController = async (req, res) => {
+  try {
+    const { country_code, transaction_id, mobile_number, otp } = req.body;
+
+    // Validate required fields
+    if (!transaction_id) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "transaction_id is required" });
+    }
+    if (!mobile_number) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "mobile_number is required" });
+    }
+    if (!otp) {
+      return res
+        .status(400)
+        .json({ status: "failed", message: "otp is required" });
+    }
+
+    // Call service
+    const result = await verifyOtp({ transaction_id, mobile_number, otp });
+
+    if (result.status === "failed") {
+      return res.status(400).json(result); // validation/OTP failure
+    }
+
+    return res.status(200).json(result); // OTP verified successfully
+  } catch (err) {
+    console.error("Error in verifyOtpController:", err);
+    return res.status(500).json({
+      status: "failed",
+      message: "Internal server error while verifying OTP",
+    });
+  }
 };
 
-module.exports = { registerUser, resendOtp, verifyOtp };
+module.exports = { registerUser, resendOtp, verifyOtpController };

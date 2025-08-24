@@ -4,7 +4,7 @@ const router = express.Router();
 const {
   registerUser,
   resendOtp,
-  verifyOtp,
+  verifyOtpController,
 } = require("../controllers/authController");
 
 // Example: GET /api/auth
@@ -12,6 +12,6 @@ router.post("/register", registerUser);
 
 router.post("/resend-otp", resendOtp);
 
-router.post("/verify-otp", verifyOtp);
+router.post("/verify-otp", verifyOtpController);
 
 module.exports = router;
