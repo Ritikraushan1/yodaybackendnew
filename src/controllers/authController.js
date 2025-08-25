@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require("uuid");
 const { findUserByMobile, registerNewUser } = require("../models/authModel");
 const { sendOtp, verifyOtp } = require("../utils/otpUtil");
+const { generateToken } = require("../utils/jwtUtil");
 
 const registerUser = async (req, res) => {
   console.log("👉 Auth controller login hit");
@@ -137,7 +138,20 @@ const verifyOtpController = async (req, res) => {
       return res.status(400).json(result); // validation/OTP failure
     }
 
-    return res.status(200).json(result); // OTP verified successfully
+    const { success, user, status, message } = await findUserByMobile(
+      mobile_number
+    );
+
+    const token = await generateToken(user.id);
+
+    let response = {
+      status: result?.status,
+      message: result?.message,
+      id: user.id,
+      token: token,
+    };
+
+    return res.status(200).json(response); // OTP verified successfully
   } catch (err) {
     console.error("Error in verifyOtpController:", err);
     return res.status(500).json({
