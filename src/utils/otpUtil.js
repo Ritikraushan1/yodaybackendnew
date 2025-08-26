@@ -32,19 +32,30 @@ const sendOtp = async ({ mobile_number, country_code = "+91" }) => {
 };
 const verifyOtp = async ({ transaction_id, mobile_number, otp }) => {
   try {
-    // 1. Fetch the pending OTP
+    // 1. Fetch the pending OTP (including created_at timestamp)
     const otpResult = await getOtp({ transaction_id, mobile_number });
 
-    if (!otpResult.success) {
+    if (!otpResult.success || !otpResult.data) {
       return {
         status: "failed",
         message: "No pending OTP found or it may have expired.",
       };
     }
 
-    const storedOtp = otpResult.data.otp;
+    const { otp: storedOtp, created_at } = otpResult.data;
 
-    // 2. Compare
+    // 2. Check if OTP expired (1 min = 60,000 ms)
+    const now = Date.now();
+    const otpAge = now - new Date(created_at).getTime();
+
+    if (otpAge > 60 * 1000) {
+      return {
+        status: "failed",
+        message: "OTP expired. Please request a new one.",
+      };
+    }
+
+    // 3. Compare OTP
     if (storedOtp !== otp) {
       return {
         status: "failed",
@@ -52,7 +63,7 @@ const verifyOtp = async ({ transaction_id, mobile_number, otp }) => {
       };
     }
 
-    // 3. Mark OTP as verified
+    // 4. Mark OTP as verified
     const updateResult = await markOtpVerified({
       transaction_id,
       mobile_number,
@@ -71,6 +82,7 @@ const verifyOtp = async ({ transaction_id, mobile_number, otp }) => {
       message: "OTP verified successfully.",
     };
   } catch (err) {
+    console.error("Error verifying OTP:", err);
     return {
       status: "failed",
       message: "An error occurred while verifying OTP.",

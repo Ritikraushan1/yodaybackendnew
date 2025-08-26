@@ -3,7 +3,7 @@ const router = express.Router();
 
 // Import feature routes
 const authRoutes = require("./routes/authRoute");
-// const userRoutes = require("./routes/user.routes");
+const userRoutes = require("./routes/userRoute");
 // const postRoutes = require("./routes/post.routes");
 
 // API root check
@@ -13,7 +13,7 @@ router.get("/", (req, res) => {
 
 // Mount feature routes
 router.use("/auth", authRoutes);
-// router.use("/users", userRoutes);
+router.use("/user", userRoutes);
 // router.use("/posts", postRoutes);
 
 module.exports = router;

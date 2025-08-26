@@ -12,6 +12,17 @@ const findUserByMobile = async (mobile_number) => {
   }
 };
 
+const findUserById = async (id) => {
+  try {
+    const query = "SELECT * FROM users WHERE id = $1 AND is_deleted = FALSE";
+    const { rows } = await pool.query(query, [id]);
+    return { success: true, user: rows[0] || null };
+  } catch (err) {
+    console.error("❌ Error in findUserByMobile:", err.message);
+    return { success: false, status: 500, message: "Database query failed" };
+  }
+};
+
 const registerNewUser = async (userData) => {
   try {
     const query = `
@@ -65,4 +76,43 @@ const registerNewUser = async (userData) => {
   }
 };
 
-module.exports = { findUserByMobile, registerNewUser };
+const deleteUserById = async (id) => {
+  try {
+    // fetch the current user
+    const selectQuery =
+      "SELECT mobile_number FROM users WHERE id = $1 AND is_deleted = FALSE";
+    const { rows } = await pool.query(selectQuery, [id]);
+
+    if (rows.length === 0) {
+      return { success: false, message: "User not found or already deleted" };
+    }
+
+    const oldMobile = rows[0].mobile_number;
+    const randomNumber = Math.floor(10 + Math.random() * 90); // e.g., 51729
+    const newMobile = `deleted-${oldMobile}`;
+
+    // soft delete update
+    const updateQuery = `
+      UPDATE users
+      SET is_deleted = TRUE,
+          mobile_number = $1,
+          modified_at = NOW()
+      WHERE id = $2
+      RETURNING *;
+    `;
+
+    const { rows: updated } = await pool.query(updateQuery, [newMobile, id]);
+
+    return { success: true };
+  } catch (err) {
+    console.error("❌ Error in deleteUserById:", err.message);
+    return { success: false, status: 500, message: "Database delete failed" };
+  }
+};
+
+module.exports = {
+  findUserByMobile,
+  registerNewUser,
+  findUserById,
+  deleteUserById,
+};

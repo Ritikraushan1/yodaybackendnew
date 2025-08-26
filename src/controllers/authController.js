@@ -1,5 +1,6 @@
 const { v4: uuidv4 } = require("uuid");
 const { findUserByMobile, registerNewUser } = require("../models/authModel");
+const { findUserProfileById } = require("../models/userProfileModel");
 const { sendOtp, verifyOtp } = require("../utils/otpUtil");
 const { generateToken } = require("../utils/jwtUtil");
 
@@ -28,6 +29,7 @@ const registerUser = async (req, res) => {
           .status(500)
           .json({ success: false, message: otpResult.message });
       }
+
       return res.status(200).json({
         success: true,
         new_registration: false,
@@ -141,14 +143,25 @@ const verifyOtpController = async (req, res) => {
     const { success, user, status, message } = await findUserByMobile(
       mobile_number
     );
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: "No user found with this mobile number",
+      });
+    }
 
     const token = await generateToken(user.id);
+
+    const user_profile = await findUserProfileById(user.id);
+    console.log("user_profile", user_profile);
 
     let response = {
       status: result?.status,
       message: result?.message,
       id: user.id,
       token: token,
+      update_profile: !user_profile.user, // ✅ true if no profile found
+      profile: user_profile.user || null,
     };
 
     return res.status(200).json(response); // OTP verified successfully
