@@ -1,0 +1,97 @@
+const {
+  createNewPosts,
+  updatePostByCode,
+  deletePostByCode,
+} = require("../models/postModel");
+
+const createPostHandler = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const data = req.body;
+    if (!data) {
+      return res.status(500).json({ message: "No data is provided" });
+    }
+
+    const createdPosts = await createNewPosts({ ...data, posted_by: userId });
+
+    if (createdPosts.success) {
+      return res.status(200).json({ post: createdPosts.post });
+    } else {
+      return res.status(500).json({ message: createdPosts.message });
+    }
+  } catch (error) {
+    console.error("❌ Error in createNewPosts:", error.message);
+    return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+
+const updatePostHandler = async (req, res) => {
+  try {
+    console.log("reaching update controller");
+
+    const { id } = req.params;
+    const data = req.body;
+
+    if (!id) {
+      return res
+        .status(400)
+        .json({ message: "post_code is required in params" });
+    }
+
+    if (!data || Object.keys(data).length === 0) {
+      return res.status(400).json({ message: "No update data provided" });
+    }
+
+    const updatedPost = await updatePostByCode(id, data);
+
+    if (!updatedPost.success) {
+      return res.status(404).json({ message: updatedPost.message });
+    }
+
+    return res.status(200).json({
+      message: "Post updated successfully",
+      post: updatedPost.post,
+    });
+  } catch (error) {
+    console.error("❌ Error in updatePostHandler:", error.message);
+    return res.status(500).json({
+      message: "Try again later after sometime",
+    });
+  }
+};
+
+const deletePostHandler = async (req, res) => {
+  try {
+    console.log("reaching delete controller");
+
+    const { id: post_code } = req.params;
+
+    if (!post_code) {
+      return res
+        .status(400)
+        .json({ message: "post_code is required in params" });
+    }
+
+    const deletedPost = await deletePostByCode(post_code);
+
+    if (!deletedPost.success) {
+      return res.status(404).json({ message: deletedPost.message });
+    }
+
+    return res.status(200).json({
+      message: "Post deleted successfully",
+      post: deletedPost.post,
+    });
+  } catch (error) {
+    console.error("❌ Error in deletePostHandler:", error.message);
+    return res.status(500).json({
+      message: "Try again later after sometime",
+    });
+  }
+};
+
+module.exports = {
+  createPostHandler,
+  updatePostHandler,
+  deletePostHandler,
+};
