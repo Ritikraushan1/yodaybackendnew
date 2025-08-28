@@ -8,11 +8,18 @@ const {
   getAllPostsHandler,
   getPostByCodeHandler,
 } = require("../controllers/postController");
+const {
+  addReactionHandler,
+  removeReactionHandler,
+} = require("../controllers/postLikesController");
 
 router.post("/", authMiddleware, createPostHandler);
 router.get("/", authMiddleware, getAllPostsHandler);
 router.get("/:id", authMiddleware, getPostByCodeHandler);
 router.put("/:id", authMiddleware, updatePostHandler);
 router.delete("/:id", authMiddleware, deletePostHandler);
+
+router.post("/:postId/react", authMiddleware, addReactionHandler);
+router.delete("/:postId/react", authMiddleware, removeReactionHandler);
 
 module.exports = router;

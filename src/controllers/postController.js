@@ -5,6 +5,7 @@ const {
   getAllPosts,
   getPostByCode,
 } = require("../models/postModel");
+const { getReactionCounts } = require("../models/postLikesModel");
 
 const createPostHandler = async (req, res) => {
   try {
@@ -30,12 +31,25 @@ const createPostHandler = async (req, res) => {
 const getAllPostsHandler = async (req, res) => {
   try {
     const postsData = await getAllPosts();
-
-    if (postsData.success) {
-      return res.status(200).json({ posts: postsData.posts });
-    } else {
+    if (!postsData.success) {
       return res.status(500).json({ message: postsData.message });
     }
+
+    const posts = postsData.posts;
+
+    // Fetch like/dislike counts for each post
+    const postsWithReactions = await Promise.all(
+      posts.map(async (post) => {
+        const counts = await getReactionCounts(post.post_code);
+        return {
+          ...post,
+          like_count: counts.success ? counts.like_count : 0,
+          dislike_count: counts.success ? counts.dislike_count : 0,
+        };
+      })
+    );
+
+    return res.status(200).json({ posts: postsWithReactions });
   } catch (error) {
     console.error("❌ Error in getAllPostsHandler:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });

@@ -1,3 +1,4 @@
+const { getLikeCount } = require("../models/commentLikeModel");
 const {
   addComment,
   addReply,
@@ -5,6 +6,7 @@ const {
   updateComment,
   deleteComment,
 } = require("../models/commentModel");
+const { findUserProfileById } = require("../models/userProfileModel");
 
 // Add a top-level comment
 const addCommentHandler = async (req, res) => {
@@ -75,13 +77,43 @@ const getCommentsHandler = async (req, res) => {
         .json({ message: "postCode is required in params" });
     }
 
-    const comments = await getCommentsByPost(postCode);
+    // Fetch flat comments from model
+    const commentsData = await getCommentsByPost(postCode);
 
-    if (comments.success) {
-      return res.status(200).json({ comments: comments.comments });
-    } else {
-      return res.status(404).json({ message: comments.message });
+    if (!commentsData.success) {
+      return res.status(404).json({ message: commentsData.message });
     }
+
+    const rows = commentsData.comments;
+
+    // Build threaded structure
+    const commentsMap = {};
+    const rootComments = [];
+
+    for (const comment of rows) {
+      // Get like count for this comment
+      const likeResult = await getLikeCount(comment.comment_id);
+      comment.likes = likeResult.success ? likeResult.like_count : 0;
+      const userCommented = await findUserProfileById(comment.user_id);
+      comment.username = userCommented?.user?.name || "";
+      comment.useravatar = userCommented?.user?.avatar || "";
+
+      comment.replies = [];
+      commentsMap[comment.comment_id] = comment;
+
+      if (comment.parent_comment_id) {
+        // attach to parent
+        const parent = commentsMap[comment.parent_comment_id];
+        if (parent) {
+          parent.replies.push(comment);
+        }
+      } else {
+        // top-level comment
+        rootComments.push(comment);
+      }
+    }
+
+    return res.status(200).json({ comments: rootComments });
   } catch (error) {
     console.error("❌ Error in getCommentsHandler:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });

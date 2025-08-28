@@ -76,15 +76,7 @@ const getCommentsByPost = async (postCode) => {
 
     // Fetch all comments for the post
     const query = `
-      SELECT 
-        c.comment_id, 
-        c.post_id, 
-        c.user_id, 
-        c.parent_comment_id, 
-        c.text, 
-        c.emoji, 
-        c.image_url, 
-        c.created_at
+      SELECT *
       FROM comments c
       WHERE c.post_id = $1
       ORDER BY c.created_at;
@@ -92,27 +84,7 @@ const getCommentsByPost = async (postCode) => {
 
     const { rows } = await pool.query(query, [postCode]);
 
-    // Build threaded structure
-    const commentsMap = {};
-    const rootComments = [];
-
-    rows.forEach((comment) => {
-      comment.replies = [];
-      commentsMap[comment.comment_id] = comment;
-
-      if (comment.parent_comment_id) {
-        // attach to parent
-        const parent = commentsMap[comment.parent_comment_id];
-        if (parent) {
-          parent.replies.push(comment);
-        }
-      } else {
-        // top-level comment
-        rootComments.push(comment);
-      }
-    });
-
-    return { success: true, comments: rootComments };
+    return { success: true, comments: rows };
   } catch (err) {
     console.error("❌ Error in getCommentsByPost:", err.message);
     return { success: false, status: 500, message: "Database query failed" };

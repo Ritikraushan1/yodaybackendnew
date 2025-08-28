@@ -33,6 +33,7 @@ const findUserProfileById = async (id) => {
     const query =
       "SELECT * FROM user_profiles WHERE id = $1 AND is_deleted = FALSE";
     const { rows } = await pool.query(query, [id]);
+
     return { success: true, user: rows[0] || null };
   } catch (err) {
     console.error("❌ Error in findUserByMobile:", err.message);
