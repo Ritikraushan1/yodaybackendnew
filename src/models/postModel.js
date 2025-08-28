@@ -48,6 +48,49 @@ const createNewPosts = async (data) => {
   }
 };
 
+// Get all posts
+const getAllPosts = async () => {
+  try {
+    const query = `
+      SELECT post_code, posted_by, content, content_meta, status, visibility, created_at
+      FROM posts
+      ORDER BY created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return { success: true, posts: rows };
+  } catch (err) {
+    console.error("❌ Error in getAllPosts:", err.message);
+    return { success: false, status: 500, message: "Failed to fetch posts" };
+  }
+};
+
+// Get post by post_code
+const getPostByCode = async (postCode) => {
+  try {
+    if (!postCode) {
+      return { success: false, message: "post_code is required" };
+    }
+
+    const query = `
+      SELECT post_code, posted_by, content, content_meta, status, visibility, created_at
+      FROM posts
+      WHERE post_code = $1;
+    `;
+
+    const { rows } = await pool.query(query, [postCode]);
+
+    if (rows.length === 0) {
+      return { success: false, status: 404, message: "Post not found" };
+    }
+
+    return { success: true, post: rows[0] };
+  } catch (err) {
+    console.error("❌ Error in getPostByCode:", err.message);
+    return { success: false, status: 500, message: "Failed to fetch post" };
+  }
+};
+
 const updatePostByCode = async (postCode, data) => {
   try {
     if (!postCode) {
@@ -124,5 +167,7 @@ const deletePostByCode = async (postCode) => {
 module.exports = {
   createNewPosts,
   updatePostByCode,
-  deletePostByCode
+  deletePostByCode,
+  getAllPosts,
+  getPostByCode,
 };

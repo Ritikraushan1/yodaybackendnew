@@ -2,6 +2,8 @@ const {
   createNewPosts,
   updatePostByCode,
   deletePostByCode,
+  getAllPosts,
+  getPostByCode,
 } = require("../models/postModel");
 
 const createPostHandler = async (req, res) => {
@@ -21,6 +23,40 @@ const createPostHandler = async (req, res) => {
     }
   } catch (error) {
     console.error("❌ Error in createNewPosts:", error.message);
+    return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+
+const getAllPostsHandler = async (req, res) => {
+  try {
+    const postsData = await getAllPosts();
+
+    if (postsData.success) {
+      return res.status(200).json({ posts: postsData.posts });
+    } else {
+      return res.status(500).json({ message: postsData.message });
+    }
+  } catch (error) {
+    console.error("❌ Error in getAllPostsHandler:", error.message);
+    return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+
+const getPostByCodeHandler = async (req, res) => {
+  try {
+    const postCode = req.params.id;
+
+    const postData = await getPostByCode(postCode);
+
+    if (postData.success) {
+      return res.status(200).json({ post: postData.post });
+    } else if (postData.status === 404) {
+      return res.status(404).json({ message: postData.message });
+    } else {
+      return res.status(500).json({ message: postData.message });
+    }
+  } catch (error) {
+    console.error("❌ Error in getPostByCodeHandler:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });
   }
 };
@@ -94,4 +130,6 @@ module.exports = {
   createPostHandler,
   updatePostHandler,
   deletePostHandler,
+  getAllPostsHandler,
+  getPostByCodeHandler,
 };

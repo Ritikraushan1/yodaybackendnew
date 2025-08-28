@@ -5,6 +5,7 @@ const router = express.Router();
 const authRoutes = require("./routes/authRoute");
 const userRoutes = require("./routes/userRoute");
 const postRoutes = require("./routes/postRoutes");
+const commentRoutes = require("./routes/commentRoutes");
 
 // API root check
 router.get("/", (req, res) => {
@@ -15,5 +16,6 @@ router.get("/", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/user", userRoutes);
 router.use("/posts", postRoutes);
+router.use("/comments", commentRoutes);
 
 module.exports = router;

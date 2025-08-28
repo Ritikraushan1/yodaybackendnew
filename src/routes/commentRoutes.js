@@ -1,0 +1,18 @@
+const express = require("express");
+const router = express.Router();
+const authMiddleware = require("../middlewares/authMiddleware");
+const {
+  addCommentHandler,
+  addReplyHandler,
+  getCommentsHandler,
+  updateCommentHandler,
+  deleteCommentHandler,
+} = require("../controllers/commentController");
+
+router.post("/", authMiddleware, addCommentHandler);
+router.put("/:commentId", authMiddleware, updateCommentHandler);
+router.delete("/:commentId", authMiddleware, deleteCommentHandler);
+router.post("/reply", authMiddleware, addReplyHandler);
+router.get("/post/:postCode", authMiddleware, getCommentsHandler);
+
+module.exports = router;
