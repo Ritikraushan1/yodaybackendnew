@@ -13,9 +13,12 @@
   "dependencies": {
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "express-session": "^1.18.2",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
+    "nodemailer": "^7.0.6",
     "nodemon": "^3.1.10",
+    "nunjucks": "^3.2.4",
     "pg": "^8.16.3",
     "uuid": "^11.1.0"
   }

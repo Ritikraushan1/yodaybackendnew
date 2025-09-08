@@ -6,7 +6,6 @@ const authRoutes = require("./routes/authRoute");
 const userRoutes = require("./routes/userRoute");
 const postRoutes = require("./routes/postRoutes");
 const commentRoutes = require("./routes/commentRoutes");
-
 // API root check
 router.get("/", (req, res) => {
   res.json({ message: "API root is working 🚀" });

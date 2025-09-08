@@ -1,0 +1,84 @@
+{% extends "admin/layout.njk" %}
+{% set active = "posts" %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">All Posts</h1>
+
+<!-- 🔍 Search Form -->
+<form method="get" action="/admin/posts" class="mb-6 flex items-center gap-2">
+  <input 
+    type="text" 
+    name="search" 
+    value="{{ query.search or '' }}" 
+    placeholder="Search by content..." 
+    class="border rounded-lg p-2 flex-1"
+  >
+  <button 
+    type="submit" 
+    class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:opacity-90"
+  >
+    Search
+  </button>
+</form>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg overflow-x-auto">
+  <table class="w-full text-left border-collapse">
+    <thead>
+      <tr class="border-b bg-gray-50">
+        <th class="p-2">ID</th>
+        <th class="p-2">Content</th>
+        <th class="p-2">Author</th>
+        <th class="p-2">Status</th>
+        <th class="p-2">Likes</th>
+        <th class="p-2">Dislikes</th>
+        <th class="p-2">Posted At</th>
+        <th class="p-2 text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for post in posts %}
+      <tr class="border-b hover:bg-gray-50">
+        <td class="p-2 font-mono text-sm">{{ post.post_code }}</td>
+        <td class="p-2 truncate max-w-xs">{{ post.content }}</td>
+        <td class="p-2">{{ post.posted_by }}</td>
+        <td class="p-2">
+          <span class="px-2 py-1 rounded-full text-xs 
+            {% if post.status == 'active' %} bg-green-100 text-green-700 
+            {% else %} bg-red-100 text-red-700 {% endif %}">
+            {{ post.status }}
+          </span>
+        </td>
+        <td class="p-2 text-center">{{ post.like_count }}</td>
+        <td class="p-2 text-center">{{ post.dislike_count }}</td>
+        <td class="p-2">{{ post.created_at | formatDate }}</td>
+        <td class="p-2 flex gap-2 justify-center">
+          <!-- Buttons -->
+          <a href="/admin/posts/{{ post.post_code }}/comments" 
+             class="bg-blue-500 hover:bg-blue-600 text-white px-3 py-1 rounded-lg text-sm">
+            💬 Read Comments
+          </a>
+          <a href="/admin/posts/{{ post.post_code }}/edit" 
+             class="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-lg text-sm">
+            ✏️ Edit
+          </a>
+          <!-- Delete button only if not deleted -->
+          {% if post.status != 'deleted' %}
+          <a href="/admin/posts/{{ post.post_code }}/delete" 
+            class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded-lg text-sm"
+            onclick="return confirm('Are you sure you want to delete this post?');">
+            🗑️ Delete
+          </a>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr>
+        <td colspan="8" class="p-4 text-center text-gray-500 italic">
+          No posts found
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

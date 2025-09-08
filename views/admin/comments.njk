@@ -1,0 +1,30 @@
+{% extends "admin/layout.njk" %}
+{% set active = "comments" %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">All Comments</h1>
+<div class="bg-white p-6 rounded-2xl shadow-lg">
+  <table class="w-full text-left border-collapse">
+    <thead>
+      <tr class="border-b">
+        <th class="p-2">ID</th>
+        <th class="p-2">Post</th>
+        <th class="p-2">User</th>
+        <th class="p-2">Comment</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for comment in comments %}
+      <tr class="border-b">
+        <td class="p-2">{{ comment.id }}</td>
+        <td class="p-2">{{ comment.postTitle }}</td>
+        <td class="p-2">{{ comment.userName }}</td>
+        <td class="p-2">{{ comment.content }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="4" class="p-4 text-center text-gray-500 italic">No comments found</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

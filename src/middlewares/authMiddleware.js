@@ -32,4 +32,22 @@ const authMiddleware = (req, res, next) => {
   }
 };
 
-module.exports = authMiddleware;
+function ensureAdmin(req, res, next) {
+  if (!req.session || !req.session.admin) {
+    return res.redirect("/admin/login"); // not logged in
+  }
+
+  // optional: enforce role
+  if (req.session.admin.role !== "superadmin") {
+    return res.status(403).render("error.njk", {
+      title: "Forbidden",
+      message: "You are not allowed here",
+    });
+  }
+
+  // make available to templates
+  res.locals.user = req.session.admin;
+  next();
+}
+
+module.exports = { authMiddleware, ensureAdmin };

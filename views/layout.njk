@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title or "Admin Panel" }}</title>
+</head>
+<body>
+  <header>
+    <h1>Admin Panel</h1>
+    <hr>
+  </header>
+
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <footer>
+    <hr>
+    <p>© {{ year or "2025" }}</p>
+  </footer>
+</body>
+</html>

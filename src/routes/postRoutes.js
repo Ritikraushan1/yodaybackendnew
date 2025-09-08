@@ -1,6 +1,9 @@
 const express = require("express");
 const router = express.Router();
-const authMiddleware = require("../middlewares/authMiddleware");
+const {
+  authMiddleware,
+  ensureAdmin,
+} = require("../middlewares/authMiddleware");
 const {
   createPostHandler,
   updatePostHandler,
@@ -13,7 +16,7 @@ const {
   removeReactionHandler,
 } = require("../controllers/postLikesController");
 
-router.post("/", authMiddleware, createPostHandler);
+router.post("/", ensureAdmin, createPostHandler);
 router.get("/", authMiddleware, getAllPostsHandler);
 router.get("/:id", authMiddleware, getPostByCodeHandler);
 router.put("/:id", authMiddleware, updatePostHandler);

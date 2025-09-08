@@ -1,0 +1,15 @@
+{% extends "admin/layout.njk" %}
+{% set active = "deletedUsers" %}
+
+{% block content %}
+<h1 class="text-3xl font-bold mb-6">Deleted Users</h1>
+<div class="bg-white p-6 rounded-2xl shadow-lg">
+  <ul class="space-y-2">
+    {% for user in deletedUsers %}
+      <li class="p-3 bg-gray-50 rounded border">{{ user.name }} ({{ user.email }})</li>
+    {% else %}
+      <p class="text-gray-500 italic">No deleted users</p>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

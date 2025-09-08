@@ -9,21 +9,50 @@ const { getReactionCounts } = require("../models/postLikesModel");
 
 const createPostHandler = async (req, res) => {
   try {
-    const userId = req.user.userId;
-    const data = req.body;
-    if (!data) {
-      return res.status(500).json({ message: "No data is provided" });
+    const admin = req.session.admin;
+    if (!admin) {
+      return res.redirect("/admin/login");
     }
 
-    const createdPosts = await createNewPosts({ ...data, posted_by: userId });
+    const data = req.body;
+    if (!data) {
+      return res.render("admin/newPost.njk", {
+        title: "Add New Post",
+        error: "No data is provided",
+      });
+    }
+
+    const createdPosts = await createNewPosts({
+      ...data,
+      posted_by: admin.email,
+    });
 
     if (createdPosts.success) {
+      // HTML form → redirect
+      if (req.headers.accept && req.headers.accept.includes("text/html")) {
+        return res.redirect("/admin/posts?success=1");
+      }
+      // API client → JSON
       return res.status(200).json({ post: createdPosts.post });
     } else {
+      if (req.headers.accept && req.headers.accept.includes("text/html")) {
+        return res.render("admin/newPost.njk", {
+          title: "Add New Post",
+          error: createdPosts.message,
+        });
+      }
       return res.status(500).json({ message: createdPosts.message });
     }
   } catch (error) {
     console.error("❌ Error in createNewPosts:", error.message);
+
+    if (req.headers.accept && req.headers.accept.includes("text/html")) {
+      return res.render("admin/newPost.njk", {
+        title: "Add New Post",
+        error: "Something went wrong, please try again.",
+      });
+    }
+
     return res.status(500).json({ message: "Try again later after sometime" });
   }
 };
@@ -53,6 +82,34 @@ const getAllPostsHandler = async (req, res) => {
   } catch (error) {
     console.error("❌ Error in getAllPostsHandler:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+
+const getPostsWithReactions = async () => {
+  try {
+    const postsData = await getAllPosts();
+    if (!postsData.success) {
+      return { success: false, message: postsData.message };
+    }
+
+    const posts = postsData.posts;
+
+    // Attach like/dislike counts
+    const postsWithReactions = await Promise.all(
+      posts.map(async (post) => {
+        const counts = await getReactionCounts(post.post_code);
+        return {
+          ...post,
+          like_count: counts.success ? counts.like_count : 0,
+          dislike_count: counts.success ? counts.dislike_count : 0,
+        };
+      })
+    );
+
+    return { success: true, posts: postsWithReactions };
+  } catch (error) {
+    console.error("❌ Error in getPostsWithReactions:", error.message);
+    return { success: false, message: "Try again later after sometime" };
   }
 };
 
@@ -146,4 +203,5 @@ module.exports = {
   deletePostHandler,
   getAllPostsHandler,
   getPostByCodeHandler,
+  getPostsWithReactions,
 };

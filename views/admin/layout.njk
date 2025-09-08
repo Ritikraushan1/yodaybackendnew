@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ title or "Admin Dashboard" }}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="min-h-screen flex bg-gray-100">
+
+  <!-- Sidebar -->
+  <aside class="w-72 bg-gradient-to-b from-purple-800 to-indigo-900 text-white flex flex-col p-6 shadow-xl">
+    <h2 class="text-3xl font-extrabold mb-10 tracking-wide">Admin Panel</h2>
+    <nav class="flex-1 space-y-4">
+      <a href="/admin/dashboard" class="block px-4 py-2 rounded-lg hover:bg-purple-700">Dashboard</a>
+      <div>
+        <h3 class="uppercase text-sm text-gray-300 mb-2">Posts</h3>
+        <a href="/admin/posts" class="block px-4 py-2 rounded-lg hover:bg-purple-700">View All</a>
+        <a href="/admin/posts/new" class="block px-4 py-2 rounded-lg hover:bg-purple-700">Add New</a>
+      </div>
+      <div>
+        <h3 class="uppercase text-sm text-gray-300 mb-2">Users</h3>
+        <a href="/admin/users" class="block px-4 py-2 rounded-lg hover:bg-purple-700">All Users</a>
+        <a href="/admin/users/deleted" class="block px-4 py-2 rounded-lg hover:bg-purple-700">Deleted Users</a>
+      </div>
+      <div>
+        <h3 class="uppercase text-sm text-gray-300 mb-2">Comments</h3>
+        <a href="/admin/comments" class="block px-4 py-2 rounded-lg hover:bg-purple-700">View All</a>
+      </div>
+      <div>
+        <h3 class="uppercase text-sm text-gray-300 mb-2">Notifications</h3>
+        <a href="/admin/notifications" class="block px-4 py-2 rounded-lg hover:bg-purple-700">Send Notification</a>
+      </div>
+    </nav>
+    <a href="/admin/logout" class="mt-auto bg-red-600 px-4 py-2 rounded-lg text-center font-semibold hover:bg-red-700">Logout</a>
+  </aside>
+
+  <!-- Main -->
+  <main class="flex-1 p-10 overflow-y-auto text-gray-900">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
