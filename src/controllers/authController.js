@@ -1,9 +1,18 @@
 const { v4: uuidv4 } = require("uuid");
-const { findUserByMobile, registerNewUser } = require("../models/authModel");
-const { findUserProfileById } = require("../models/userProfileModel");
+const {
+  findUserByMobile,
+  registerNewUser,
+  findUserByFacebookId,
+  registerFacebookUser,
+  updateFacebookUser,
+} = require("../models/authModel");
+const {
+  findUserProfileById,
+  createUserProfile,
+} = require("../models/userProfileModel");
 const { sendOtp, verifyOtp } = require("../utils/otpUtil");
 const { generateToken } = require("../utils/jwtUtil");
-
+const axios = require("axios");
 const registerUser = async (req, res) => {
   console.log("👉 Auth controller login hit");
   console.log("Request body:", req.body);
@@ -174,4 +183,106 @@ const verifyOtpController = async (req, res) => {
   }
 };
 
-module.exports = { registerUser, resendOtp, verifyOtpController };
+const facebookLoginController = async (req, res) => {
+  try {
+    const { access_token, device_info } = req.body;
+
+    if (!access_token) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Facebook access token is required" });
+    }
+
+    // ✅ Step 1: Verify access token with Facebook Graph API
+    const fbResponse = await axios.get("https://graph.facebook.com/me", {
+      params: {
+        fields: "id,name,email,picture",
+        access_token,
+      },
+    });
+
+    const fbUser = fbResponse.data;
+    if (!fbUser.id) {
+      return res
+        .status(401)
+        .json({ success: false, message: "Invalid Facebook token" });
+    }
+
+    // ✅ Step 2: Check if user exists in DB
+    let { user } = await findUserByFacebookId(fbUser.id);
+
+    if (!user) {
+      // ➕ New user → Insert into `users`
+      const registerResult = await registerFacebookUser({
+        facebook_id: fbUser.id,
+        facebook_token: access_token,
+        email_id: fbUser.email || null,
+        ...device_info,
+      });
+
+      if (!registerResult.success) {
+        return res.status(500).json({
+          success: false,
+          message: "Failed to register Facebook user",
+        });
+      }
+
+      user = registerResult.user;
+
+      // ➕ Also insert into `user_profiles`
+      await createUserProfile({
+        id: user.id,
+        name: fbUser.name,
+        email: fbUser.email || null,
+        avatar: fbUser.picture?.data?.url || null,
+        mobile_number: "",
+        type: "user",
+      });
+    } else {
+      // 🔄 Existing user → update token & device info
+      const updateResult = await updateFacebookUser(fbUser.id, {
+        facebook_token: access_token,
+        ...device_info,
+      });
+
+      if (!updateResult.success) {
+        return res
+          .status(500)
+          .json({ success: false, message: "Failed to update Facebook user" });
+      }
+
+      user = updateResult.user;
+    }
+
+    // ✅ Step 3: Generate JWT
+    const token = await generateToken(user.id);
+
+    // ✅ Step 4: Fetch user profile
+    const user_profile = await findUserProfileById(user.id);
+    console.log("user_profile", user_profile);
+
+    // ✅ Step 5: Respond
+    return res.status(200).json({
+      success: true,
+      id: user.id,
+      token,
+      update_profile: !user_profile.user, // true if no profile found
+      user_profile,
+    });
+  } catch (err) {
+    console.error(
+      "❌ Facebook login error:",
+      err.response?.data || err.message
+    );
+    return res
+      .status(500)
+      .json({ success: false, message: "Internal server error" });
+  }
+};
+
+module.exports = {
+  registerUser,
+  resendOtp,
+  verifyOtpController,
+  facebookLoginController,
+};
