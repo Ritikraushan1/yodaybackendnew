@@ -62,6 +62,7 @@ const createPostHandler = async (req, res) => {
 
 const getAllPostsHandler = async (req, res) => {
   try {
+    const userId = req.user.userId;
     const postsData = await getAllPosts();
     if (!postsData.success) {
       return res.status(500).json({ message: postsData.message });
