@@ -13,6 +13,7 @@ const {
 const { sendOtp, verifyOtp } = require("../utils/otpUtil");
 const { generateToken } = require("../utils/jwtUtil");
 const axios = require("axios");
+
 const registerUser = async (req, res) => {
   console.log("👉 Auth controller login hit");
   console.log("Request body:", req.body);

@@ -100,8 +100,40 @@ const getReactionCounts = async (postId) => {
   }
 };
 
+/**
+ * Get a user's reaction for a specific post
+ * @param {string} postId
+ * @param {string} userId
+ */
+const getUserReaction = async (postId, userId) => {
+  try {
+    const query = `
+      SELECT likes, dislikes
+      FROM post_likes
+      WHERE post_id = $1 AND user_id = $2;
+    `;
+    const { rows } = await pool.query(query, [postId, userId]);
+
+    if (rows.length === 0) {
+      // User has not reacted
+      return { success: true, likedByUser: false, dislikedByUser: false };
+    }
+
+    const { likes, dislikes } = rows[0];
+    return {
+      success: true,
+      likedByUser: likes,
+      dislikedByUser: dislikes,
+    };
+  } catch (err) {
+    console.error("❌ Error in getUserReaction:", err.message);
+    return { success: false, message: "Database query failed" };
+  }
+};
+
 module.exports = {
   addOrUpdateReaction,
   removeReaction,
   getReactionCounts,
+  getUserReaction,
 };

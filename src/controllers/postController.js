@@ -5,7 +5,10 @@ const {
   getAllPosts,
   getPostByCode,
 } = require("../models/postModel");
-const { getReactionCounts } = require("../models/postLikesModel");
+const {
+  getReactionCounts,
+  getUserReaction,
+} = require("../models/postLikesModel");
 
 const createPostHandler = async (req, res) => {
   try {
@@ -70,10 +73,15 @@ const getAllPostsHandler = async (req, res) => {
     const postsWithReactions = await Promise.all(
       posts.map(async (post) => {
         const counts = await getReactionCounts(post.post_code);
+        const userReaction = await getUserReaction(post.post_code, userId);
         return {
           ...post,
           like_count: counts.success ? counts.like_count : 0,
           dislike_count: counts.success ? counts.dislike_count : 0,
+          liked_by_you: userReaction.success ? userReaction.likedByUser : false,
+          disliked_by_you: userReaction.success
+            ? userReaction.dislikedByUser
+            : false,
         };
       })
     );
