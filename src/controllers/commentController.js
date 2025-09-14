@@ -94,6 +94,17 @@ const getCommentsHandler = async (req, res) => {
       // Get like count for this comment
       const likeResult = await getLikeCount(comment.comment_id);
       comment.likes = likeResult.success ? likeResult.like_count : 0;
+
+      // Check if current user liked it
+      if (userId) {
+        const likedResult = await hasUserLikedComment(
+          comment.comment_id,
+          userId
+        );
+        comment.likedByUser = likedResult.success ? likedResult.liked : false;
+      } else {
+        comment.likedByUser = false;
+      }
       const userCommented = await findUserProfileById(comment.user_id);
       comment.username = userCommented?.user?.name || "";
       comment.useravatar = userCommented?.user?.avatar || "";

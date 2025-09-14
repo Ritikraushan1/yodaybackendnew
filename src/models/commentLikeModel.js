@@ -86,9 +86,27 @@ const getLikeCount = async (commentId) => {
   }
 };
 
+const hasUserLikedComment = async (commentId, userId) => {
+  try {
+    const query = `
+      SELECT 1
+      FROM comment_likes
+      WHERE comment_id = $1 AND user_id = $2
+      LIMIT 1;
+    `;
+    const { rows } = await pool.query(query, [commentId, userId]);
+
+    return { success: true, liked: rows.length > 0 };
+  } catch (err) {
+    console.error("❌ Error in hasUserLikedComment:", err.message);
+    return { success: false, message: "Database query failed" };
+  }
+};
+
 module.exports = {
   addLike,
   getLikesByComment,
   deleteLike,
   getLikeCount,
+  hasUserLikedComment,
 };

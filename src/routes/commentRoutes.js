@@ -10,6 +10,11 @@ const {
 } = require("../controllers/commentController");
 
 const {
+  createReportHandler,
+  getReportsByCommentHandler,
+} = require("../controllers/commentReportsController");
+
+const {
   addLikeHandler,
   deleteLikeHandler,
 } = require("../controllers/commentLikesController");
@@ -23,5 +28,8 @@ router.get("/post/:postCode", authMiddleware, getCommentsHandler);
 // Likes routes
 router.post("/:commentId/like", authMiddleware, addLikeHandler);
 router.delete("/:commentId/like", authMiddleware, deleteLikeHandler);
+
+//report comments
+router.post("/:commentId/report", authMiddleware, createReportHandler);
 
 module.exports = router;
