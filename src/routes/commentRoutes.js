@@ -20,16 +20,15 @@ const {
 } = require("../controllers/commentLikesController");
 
 router.post("/", authMiddleware, addCommentHandler);
-router.put("/:commentId", authMiddleware, updateCommentHandler);
-router.delete("/:commentId", authMiddleware, deleteCommentHandler);
 router.post("/reply", authMiddleware, addReplyHandler);
 router.get("/post/:postCode", authMiddleware, getCommentsHandler);
-
 // Likes routes
 router.post("/:commentId/like", authMiddleware, addLikeHandler);
 router.delete("/:commentId/like", authMiddleware, deleteLikeHandler);
 
 //report comments
 router.post("/:commentId/report", authMiddleware, createReportHandler);
+router.put("/:commentId", authMiddleware, updateCommentHandler);
+router.delete("/:commentId", authMiddleware, deleteCommentHandler);
 
 module.exports = router;
