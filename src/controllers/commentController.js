@@ -1,4 +1,7 @@
-const { getLikeCount } = require("../models/commentLikeModel");
+const {
+  getLikeCount,
+  hasUserLikedComment,
+} = require("../models/commentLikeModel");
 const {
   addComment,
   addReply,
