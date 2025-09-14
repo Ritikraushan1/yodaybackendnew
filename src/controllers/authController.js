@@ -1,10 +1,12 @@
 const { v4: uuidv4 } = require("uuid");
+const jwt = require("jsonwebtoken");
 const {
   findUserByMobile,
   registerNewUser,
   findUserByFacebookId,
   registerFacebookUser,
   updateFacebookUser,
+  findUserById,
 } = require("../models/authModel");
 const {
   findUserProfileById,
@@ -184,6 +186,58 @@ const verifyOtpController = async (req, res) => {
   }
 };
 
+const refreshTokenController = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(400).json({ success: false, message: "Token missing" });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    // Verify token without throwing error
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res
+          .status(401)
+          .json({ login_again: true, message: "Token expired" });
+      } else {
+        return res
+          .status(401)
+          .json({ login_again: true, message: "Invalid token" });
+      }
+    }
+
+    // Check if user still exists
+    const user = await findUserById(decoded.id);
+    if (!user) {
+      return res
+        .status(401)
+        .json({ login_again: true, message: "User not found" });
+    }
+
+    // Generate new token
+    const newToken = await generateToken(user.id);
+
+    return res.status(200).json({
+      success: true,
+      id: user.id,
+      token: newToken,
+      login_again: false,
+    });
+  } catch (err) {
+    console.error("Error in refreshTokenController:", err);
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
+};
+
 const facebookLoginController = async (req, res) => {
   try {
     const { access_token, device_info } = req.body;
@@ -286,4 +340,5 @@ module.exports = {
   resendOtp,
   verifyOtpController,
   facebookLoginController,
+  refreshTokenController,
 };
