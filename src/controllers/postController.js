@@ -4,6 +4,7 @@ const {
   deletePostByCode,
   getAllPosts,
   getPostByCode,
+  getSearchedPosts,
 } = require("../models/postModel");
 const {
   getReactionCounts,
@@ -90,6 +91,46 @@ const getAllPostsHandler = async (req, res) => {
     return res.status(200).json({ posts: postsWithReactions });
   } catch (error) {
     console.error("❌ Error in getAllPostsHandler:", error.message);
+    return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+
+const getSearchedPostsHandler = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const { query } = req.query; // get search text from query parameter
+
+    if (!query || query.trim() === "") {
+      return res.status(400).json({ message: "Search query is required" });
+    }
+
+    const postsData = await getSearchedPosts(query);
+    if (!postsData.success) {
+      return res.status(500).json({ message: postsData.message });
+    }
+
+    const posts = postsData.posts;
+
+    // Fetch like/dislike counts for each post
+    const postsWithReactions = await Promise.all(
+      posts.map(async (post) => {
+        const counts = await getReactionCounts(post.post_code);
+        const userReaction = await getUserReaction(post.post_code, userId);
+        return {
+          ...post,
+          like_count: counts.success ? counts.like_count : 0,
+          dislike_count: counts.success ? counts.dislike_count : 0,
+          liked_by_you: userReaction.success ? userReaction.likedByUser : false,
+          disliked_by_you: userReaction.success
+            ? userReaction.dislikedByUser
+            : false,
+        };
+      })
+    );
+
+    return res.status(200).json({ posts: postsWithReactions });
+  } catch (error) {
+    console.error("❌ Error in getSearchedPostsHandler:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });
   }
 };
@@ -213,4 +254,5 @@ module.exports = {
   getAllPostsHandler,
   getPostByCodeHandler,
   getPostsWithReactions,
+  getSearchedPostsHandler,
 };

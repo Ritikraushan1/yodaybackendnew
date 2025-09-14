@@ -48,6 +48,32 @@ const createNewPosts = async (data) => {
   }
 };
 
+const getSearchedPosts = async (searchText) => {
+  console.log("search text", searchText);
+
+  try {
+    if (!searchText) {
+      return { success: false, message: "Search text is required" };
+    }
+
+    const query = `
+      SELECT post_code, posted_by, content, content_meta, status, visibility, created_at
+      FROM posts
+      WHERE content ILIKE $1 OR content_meta::text ILIKE $1
+      ORDER BY created_at DESC;
+    `;
+
+    const values = [`%${searchText}%`];
+
+    const { rows } = await pool.query(query, values);
+
+    return { success: true, posts: rows };
+  } catch (err) {
+    console.error("❌ Error in getSearchedPosts:", err.message);
+    return { success: false, status: 500, message: "Failed to fetch posts" };
+  }
+};
+
 // Get all posts
 const getAllPosts = async () => {
   try {
@@ -170,4 +196,5 @@ module.exports = {
   deletePostByCode,
   getAllPosts,
   getPostByCode,
+  getSearchedPosts,
 };

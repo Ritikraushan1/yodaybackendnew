@@ -10,6 +10,7 @@ const {
   deletePostHandler,
   getAllPostsHandler,
   getPostByCodeHandler,
+  getSearchedPostsHandler,
 } = require("../controllers/postController");
 const {
   addReactionHandler,
@@ -18,6 +19,7 @@ const {
 
 router.post("/", ensureAdmin, createPostHandler);
 router.get("/", authMiddleware, getAllPostsHandler);
+router.get("/search", authMiddleware, getSearchedPostsHandler);
 router.get("/:id", authMiddleware, getPostByCodeHandler);
 router.put("/:id", authMiddleware, updatePostHandler);
 router.delete("/:id", authMiddleware, deletePostHandler);
