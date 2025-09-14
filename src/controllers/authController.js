@@ -211,14 +211,18 @@ const refreshTokenController = async (req, res) => {
           .json({ login_again: true, message: "Invalid token" });
       }
     }
+    console.log("decoded", decoded);
 
     // Check if user still exists
-    const user = await findUserById(decoded.id);
+    const { success, user, status, message } = await findUserById(
+      decoded.userId
+    );
     if (!user) {
       return res
         .status(401)
         .json({ login_again: true, message: "User not found" });
     }
+    console.log("user", user);
 
     // Generate new token
     const newToken = await generateToken(user.id);
