@@ -70,6 +70,7 @@ const addReplyHandler = async (req, res) => {
 const getCommentsHandler = async (req, res) => {
   try {
     const { postCode } = req.params;
+    const userId = req.user.userId;
 
     if (!postCode) {
       return res
