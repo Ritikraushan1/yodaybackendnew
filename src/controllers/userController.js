@@ -70,15 +70,10 @@ const updateUserProfile = async (req, res) => {
     const data = req.body;
     console.log("userId", req.user);
 
-    const requiredFields = ["name", "email", "mobile_number", "description"];
-    const missingFields = requiredFields.filter(
-      (field) => !data[field] || data[field].toString().trim() === ""
-    );
-
-    if (missingFields.length > 0) {
+    if (!data || Object.keys(data).length === 0) {
       return res.status(400).json({
         success: false,
-        message: `Missing required field(s): ${missingFields.join(", ")}`,
+        message: "No data provided to update profile",
       });
     }
 
