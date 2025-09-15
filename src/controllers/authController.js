@@ -246,13 +246,14 @@ const facebookLoginController = async (req, res) => {
   try {
     const { access_token, device_info } = req.body;
 
+    // 🔹 Step 1: Validate request
     if (!access_token) {
       return res
         .status(400)
         .json({ success: false, message: "Facebook access token is required" });
     }
 
-    // ✅ Step 1: Verify access token with Facebook Graph API
+    // 🔹 Step 2: Verify token with Facebook Graph API
     const fbResponse = await axios.get("https://graph.facebook.com/me", {
       params: {
         fields: "id,name,email,picture",
@@ -261,17 +262,19 @@ const facebookLoginController = async (req, res) => {
     });
 
     const fbUser = fbResponse.data;
+    console.log("✅ Facebook user:", fbUser);
+
     if (!fbUser.id) {
       return res
         .status(401)
         .json({ success: false, message: "Invalid Facebook token" });
     }
 
-    // ✅ Step 2: Check if user exists in DB
+    // 🔹 Step 3: Find user in DB by Facebook ID
     let { user } = await findUserByFacebookId(fbUser.id);
 
     if (!user) {
-      // ➕ New user → Insert into `users`
+      // 🆕 Case A: New user → register
       const registerResult = await registerFacebookUser({
         facebook_id: fbUser.id,
         facebook_token: access_token,
@@ -288,7 +291,7 @@ const facebookLoginController = async (req, res) => {
 
       user = registerResult.user;
 
-      // ➕ Also insert into `user_profiles`
+      // Create profile for the new user
       await createUserProfile({
         id: user.id,
         name: fbUser.name,
@@ -298,7 +301,7 @@ const facebookLoginController = async (req, res) => {
         type: "user",
       });
     } else {
-      // 🔄 Existing user → update token & device info
+      // 🔄 Case B: Existing user → update token & device info
       const updateResult = await updateFacebookUser(fbUser.id, {
         facebook_token: access_token,
         ...device_info,
@@ -313,20 +316,34 @@ const facebookLoginController = async (req, res) => {
       user = updateResult.user;
     }
 
-    // ✅ Step 3: Generate JWT
+    // 🔹 Step 4: Generate JWT
     const token = await generateToken(user.id);
 
-    // ✅ Step 4: Fetch user profile
-    const user_profile = await findUserProfileById(user.id);
-    console.log("user_profile", user_profile);
+    // 🔹 Step 5: Fetch user profile
+    let user_profile = await findUserProfileById(user.id);
+    console.log("user profile response", user_profile);
 
-    // ✅ Step 5: Respond
+    if (!user_profile.user) {
+      // Profile doesn’t exist → create one using Facebook data
+      await createUserProfile({
+        id: user.id,
+        name: fbUser.name,
+        email: fbUser.email || null,
+        avatar: fbUser.picture?.data?.url || null,
+        mobile_number: "",
+        type: "user",
+      });
+
+      user_profile = await findUserProfileById(user.id);
+    }
+
+    // 🔹 Step 6: Response
     return res.status(200).json({
       success: true,
       id: user.id,
       token,
-      update_profile: !user_profile.user, // true if no profile found
-      user_profile,
+      update_profile: !user_profile, // true if no profile found
+      profile: user_profile?.user,
     });
   } catch (err) {
     console.error(
