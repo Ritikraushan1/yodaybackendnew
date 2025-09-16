@@ -59,7 +59,8 @@ const getSearchedPosts = async (searchText) => {
     const query = `
       SELECT post_code, posted_by, content, content_meta, status, visibility, created_at
       FROM posts
-      WHERE content ILIKE $1 OR content_meta::text ILIKE $1
+      WHERE status = 'active'
+        AND (content ILIKE $1 OR content_meta::text ILIKE $1)
       ORDER BY created_at DESC;
     `;
 
