@@ -5,6 +5,7 @@ const {
   getAllPosts,
   getPostByCode,
   getSearchedPosts,
+  getAllActivePosts,
 } = require("../models/postModel");
 const {
   getReactionCounts,
@@ -64,7 +65,7 @@ const createPostHandler = async (req, res) => {
 const getAllPostsHandler = async (req, res) => {
   try {
     const userId = req.user.userId;
-    const postsData = await getAllPosts();
+    const postsData = await getAllActivePosts();
     if (!postsData.success) {
       return res.status(500).json({ message: postsData.message });
     }

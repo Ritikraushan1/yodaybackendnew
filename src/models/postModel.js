@@ -91,6 +91,27 @@ const getAllPosts = async () => {
   }
 };
 
+const getAllActivePosts = async () => {
+  try {
+    const query = `
+      SELECT post_code, posted_by, content, content_meta, status, visibility, created_at
+      FROM posts
+      WHERE status = 'active'
+      ORDER BY created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return { success: true, posts: rows };
+  } catch (err) {
+    console.error("❌ Error in getAllActivePosts:", err.message);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to fetch active posts",
+    };
+  }
+};
+
 // Get post by post_code
 const getPostByCode = async (postCode) => {
   try {
@@ -197,4 +218,5 @@ module.exports = {
   getAllPosts,
   getPostByCode,
   getSearchedPosts,
+  getAllActivePosts,
 };
