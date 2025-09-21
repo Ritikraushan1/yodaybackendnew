@@ -1,5 +1,6 @@
 const { Pool } = require("pg");
 const fs = require("fs");
+const path = require('path');
 require("dotenv").config();
 
 const caCertPath = path.join(__dirname, '..', 'certs', 'rds-ca-global.pem');
