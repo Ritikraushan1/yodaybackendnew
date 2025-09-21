@@ -4,7 +4,7 @@ require("dotenv").config();
 const pool = new Pool({
   connectionString: process.env.DB_URL,
   ssl: {
-    rejectUnauthorized: false, 
+    ca: fs.readFileSync("./certs/rds-ca-global.pem").toString(),
   },
 });
 
