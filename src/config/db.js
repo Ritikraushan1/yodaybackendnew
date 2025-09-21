@@ -2,11 +2,13 @@ const { Pool } = require("pg");
 const fs = require("fs");
 require("dotenv").config();
 
+const caCertPath = path.join(__dirname, '..', 'certs', 'rds-ca-global.pem');
+const caCert = fs.readFileSync(caCertPath).toString();
 
 const pool = new Pool({
   connectionString: process.env.DB_URL,
   ssl: {
-    ca: fs.readFileSync("../certs/rds-ca-global.pem").toString(),
+    ca: caCert,
   },
 });
 
