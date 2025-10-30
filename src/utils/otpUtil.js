@@ -25,9 +25,6 @@ const sendOtp = async ({ mobile_number, country_code = "+91" }) => {
     };
   }
 
-  // TODO: integrate SMS service here
-  console.log("👉 OTP ready to send:", otp);
-
   return { status: "success", transaction_id, otp };
 };
 const verifyOtp = async ({ transaction_id, mobile_number, otp }) => {

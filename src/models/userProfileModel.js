@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const { findUserById } = require("./authModel");
 
 const allowedFields = [
   "id",
@@ -41,10 +42,47 @@ const findUserProfileById = async (id) => {
   }
 };
 
+const getAllUsers = async () => {
+  try {
+    const query = "SELECT * FROM user_profiles";
+    const { rows } = await pool.query(query);
+
+    // If no users found
+    if (!rows.length) {
+      return { success: true, users: [] };
+    }
+
+    // For each user, fetch additional data
+    const enrichedUsers = await Promise.all(
+      rows.map(async (user) => {
+        try {
+          // You can modify this depending on how findUserById works
+          const extra = await findUserById(user.id);
+
+          // Combine limited fields from extra
+          return {
+            ...user,
+            login_method: extra?.user?.login_method || "unknown",
+            last_login: extra?.user?.last_login || null,
+            is_active: extra?.user?.is_active ?? true,
+            account_creation_date: extra?.user?.created_at,
+          };
+        } catch (err) {
+          console.error(`Error fetching extra data for user ${user.id}:`, err);
+          return user; // fallback
+        }
+      })
+    );
+
+    return { success: true, users: enrichedUsers };
+  } catch (err) {
+    console.error("❌ Error fetching users:", err);
+    return { success: false, message: "Failed to fetch users" };
+  }
+};
+
 const createUserProfile = async (data) => {
   try {
-    console.log("data", data);
-
     const keys = Object.keys(data).filter((key) => allowedFields.includes(key));
 
     if (!keys.includes("id")) {
@@ -143,4 +181,5 @@ module.exports = {
   createUserProfile,
   updateUserProfileById,
   deleteUserProfileById,
+  getAllUsers,
 };

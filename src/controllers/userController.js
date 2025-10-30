@@ -68,7 +68,6 @@ const updateUserProfile = async (req, res) => {
   try {
     const userId = req.user.userId; // ✅ comes from authMiddleware
     const data = req.body;
-    console.log("userId", req.user);
 
     if (!data || Object.keys(data).length === 0) {
       return res.status(400).json({
@@ -92,7 +91,6 @@ const updateUserProfile = async (req, res) => {
         ...data,
         id: userId, // ensure ID is always included
       });
-      console.log("updated data", updated_data);
 
       return res.status(200).json({
         success: true,

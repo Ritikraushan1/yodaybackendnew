@@ -7,7 +7,21 @@ const {
   getAllPostsHandler,
   getPostsWithReactions,
 } = require("../controllers/postController");
-const { getAllPosts } = require("../models/postModel");
+const { getAllPosts, deletePostByCode } = require("../models/postModel");
+const {
+  getCommentsHandler,
+  getAllCommentsForAdmin,
+} = require("../controllers/commentController");
+const {
+  getCommentsByPost,
+  deleteCommentById,
+} = require("../models/commentModel");
+const { getAllUsers } = require("../models/userProfileModel");
+const { getAllTickets } = require("../models/ticketModel");
+const {
+  getAllTicketsHandler,
+  getAllTicketsHandlerAdmin,
+} = require("../controllers/ticketController");
 
 // Middleware to protect admin routes
 function requireAdmin(req, res, next) {
@@ -59,14 +73,76 @@ router.get("/posts/new", requireAdmin, (req, res) => {
   res.render("admin/newPost.njk", { title: "Add New Post" });
 });
 
+router.get("/posts/:postCode/comments", requireAdmin, async (req, res) => {
+  try {
+    const { postCode } = req.params;
+
+    const response = await getAllCommentsForAdmin(postCode);
+
+    // If getCommentsHandler returns JSON directly,
+    // you might want to refactor it to return data instead of sending res.
+    // Alternatively, replicate the core logic here:
+
+    // Example: if getCommentsHandler sends JSON, handle it like:
+    if (res.headersSent) return; // avoid double response
+
+    const commentsData = response?.comments || [];
+
+    res.render("admin/comments.njk", {
+      title: `Comments for ${postCode}`,
+      user: req.session.admin,
+      postCode,
+      comments: commentsData,
+    });
+  } catch (err) {
+    console.error("❌ Error fetching comments:", err.message);
+    res.render("admin/comments.njk", {
+      title: "Comments",
+      user: req.session.admin,
+      comments: [],
+      error: "Failed to load comments",
+    });
+  }
+});
+
+router.get("/posts/:postCode/delete", requireAdmin, async (req, res) => {
+  try {
+    const { postCode } = req.params;
+
+    const response = await deletePostByCode(postCode);
+
+    if (response.success) {
+      return res.status(200).json({
+        message: "Posts deleted successfully.",
+      });
+    }
+  } catch (err) {
+    console.error("❌ Error fetching comments:", err.message);
+    return res.status(500).json({
+      message: "Cannot delete posts.",
+    });
+  }
+});
+
 /* ===========================
    📌 USERS MANAGEMENT
    =========================== */
-router.get("/users", requireAdmin, (req, res) => {
-  res.render("admin/users.njk", {
-    title: "All Users",
-    user: req.session.admin,
-  });
+router.get("/users", requireAdmin, async (req, res) => {
+  try {
+    const response = await getAllUsers();
+
+    res.render("admin/users.njk", {
+      title: "All Users",
+      user: req.session.admin,
+      users: response.users,
+    });
+  } catch (error) {
+    res.render("admin/users.njk", {
+      title: "All Users",
+      user: req.session.admin,
+      users: [],
+    });
+  }
 });
 router.get("/users/new", requireAdmin, (req, res) => {
   res.render("admin/newUser.njk", { title: "New User" });
@@ -81,12 +157,42 @@ router.get("/users/deleted", requireAdmin, (req, res) => {
 router.get("/comments", requireAdmin, (req, res) => {
   res.render("admin/comments.njk", { title: "Manage Comments" });
 });
+router.post("/comments/:commentId/delete", requireAdmin, async (req, res) => {
+  const { commentId } = req.params;
+
+  const response = await deleteCommentById(commentId);
+  if (response.success) {
+    return res.status(200).json({
+      message: "Comments deleted successfully",
+    });
+  }
+});
 
 /* ===========================
    📌 NOTIFICATIONS
    =========================== */
 router.get("/notifications", requireAdmin, (req, res) => {
   res.render("admin/notifications.njk", { title: "Send Notification" });
+});
+router.post("/notifications", requireAdmin, (req, res) => {
+  // handle send notification logic here
+  res.redirect("/admin/notifications");
+});
+
+router.get("/tickets", requireAdmin, async (req, res) => {
+  const response = await getAllTicketsHandlerAdmin(req, res);
+
+  if (response) {
+    res.render("admin/tickets.njk", {
+      title: "All Tickets",
+      tickets: response.tickets,
+    });
+  } else {
+    res.render("admin/tickets.njk", {
+      title: "All Tickets",
+      tickets: [],
+    });
+  }
 });
 router.post("/notifications", requireAdmin, (req, res) => {
   // handle send notification logic here

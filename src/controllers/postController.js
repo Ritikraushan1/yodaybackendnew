@@ -185,8 +185,6 @@ const getPostByCodeHandler = async (req, res) => {
 
 const updatePostHandler = async (req, res) => {
   try {
-    console.log("reaching update controller");
-
     const { id } = req.params;
     const data = req.body;
 
@@ -220,8 +218,6 @@ const updatePostHandler = async (req, res) => {
 
 const deletePostHandler = async (req, res) => {
   try {
-    console.log("reaching delete controller");
-
     const { id: post_code } = req.params;
 
     if (!post_code) {

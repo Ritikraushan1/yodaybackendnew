@@ -49,8 +49,6 @@ const createNewPosts = async (data) => {
 };
 
 const getSearchedPosts = async (searchText) => {
-  console.log("search text", searchText);
-
   try {
     if (!searchText) {
       return { success: false, message: "Search text is required" };

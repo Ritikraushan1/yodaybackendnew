@@ -3,28 +3,82 @@
 
 {% block content %}
 <h1 class="text-3xl font-bold mb-6">All Users</h1>
-<div class="bg-white p-6 rounded-2xl shadow-lg">
+
+<!-- ✅ Alert Message -->
+<div id="alertBox" class="hidden mb-4 p-3 rounded-lg text-white text-sm font-medium"></div>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg overflow-x-auto">
   <table class="w-full text-left border-collapse">
     <thead>
-      <tr class="border-b">
-        <th class="p-2">ID</th>
+      <tr class="border-b bg-gray-50 text-sm text-gray-600">
+        <th class="p-2 text-center">#</th>
+        <th class="p-2">Avatar</th>
+        <th class="p-2">Description</th>
         <th class="p-2">Name</th>
         <th class="p-2">Email</th>
-        <th class="p-2">Status</th>
+        <th class="p-2">Gender</th>
+        <th class="p-2">Login Method</th>
+        <th class="p-2">Mobile</th>
+        <th class="p-2 text-center">Status</th>
       </tr>
     </thead>
     <tbody>
-      {% for user in users %}
-      <tr class="border-b">
-        <td class="p-2">{{ user.id }}</td>
-        <td class="p-2">{{ user.name }}</td>
-        <td class="p-2">{{ user.email }}</td>
-        <td class="p-2">{{ user.status }}</td>
-      </tr>
+      {% if users and users.length %}
+        {% for user in users %}
+        <tr id="user-{{ user.id }}" class="border-b hover:bg-gray-50 transition text-sm">
+          <!-- Serial Number -->
+          <td class="p-2 text-center text-gray-500">{{ loop.index }}</td>
+
+          <!-- Avatar -->
+          <td class="p-2">
+            {% if user.avatar %}
+              <img src="{{ user.avatar }}" alt="{{ user.name }}" class="w-10 h-10 rounded-full border">
+            {% else %}
+              <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-500">
+                <i class="fa fa-user"></i>
+              </div>
+            {% endif %}
+          </td>
+
+          <!-- Description -->
+          <td class="p-2 text-gray-700 max-w-xs truncate">
+            {{ user.description or "—" }}
+          </td>
+
+          <!-- Name -->
+          <td class="p-2 font-semibold">{{ user.name or "Unnamed User" }}</td>
+
+          <!-- Email -->
+          <td class="p-2 text-gray-600 break-all">{{ user.email or "—" }}</td>
+
+          <!-- Gender -->
+          <td class="p-2 text-gray-700">{{ user.gender or "—" }}</td>
+
+          <!-- Login Method -->
+          <td class="p-2 text-gray-700 capitalize">{{ user.login_method or "unknown" }}</td>
+
+          <!-- Mobile -->
+          <td class="p-2 text-gray-700">{{ user.mobile_number or "—" }}</td>
+
+          <!-- Status -->
+          <td class="p-2 text-center">
+            <span class="px-2 py-1 rounded-full text-xs 
+              {% if not user.is_deleted and user.is_active %} bg-green-100 text-green-700 
+              {% else %} bg-red-100 text-red-700 {% endif %}">
+              {% if not user.is_deleted and user.is_active %} Active {% else %} Inactive {% endif %}
+            </span>
+          </td>
+        </tr>
+        {% endfor %}
       {% else %}
-      <tr><td colspan="4" class="p-4 text-center text-gray-500 italic">No users found</td></tr>
-      {% endfor %}
+        <tr>
+          <td colspan="9" class="p-4 text-center text-gray-500 italic">
+            No users found
+          </td>
+        </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
+
 {% endblock %}

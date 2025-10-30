@@ -135,6 +135,44 @@ const getCommentsHandler = async (req, res) => {
   }
 };
 
+const getAllCommentsForAdmin = async (postCode) => {
+  const commentsData = await getCommentsByPost(postCode);
+
+  if (!commentsData.success) {
+    return res.status(404).json({ message: commentsData.message });
+  }
+
+  const rows = commentsData.comments;
+  const commentsMap = {};
+  const rootComments = [];
+
+  for (const comment of rows) {
+    // Get like count for this comment
+    const likeResult = await getLikeCount(comment.comment_id);
+    comment.likes = likeResult.success ? likeResult.like_count : 0;
+
+    const userCommented = await findUserProfileById(comment.user_id);
+    comment.username = userCommented?.user?.name || "";
+    comment.useravatar = userCommented?.user?.avatar || "";
+
+    comment.replies = [];
+    commentsMap[comment.comment_id] = comment;
+
+    if (comment.parent_comment_id) {
+      // attach to parent
+      const parent = commentsMap[comment.parent_comment_id];
+      if (parent) {
+        parent.replies.push(comment);
+      }
+    } else {
+      // top-level comment
+      rootComments.push(comment);
+    }
+  }
+
+  return { comments: rootComments };
+};
+
 // Update a comment
 const updateCommentHandler = async (req, res) => {
   try {
@@ -208,4 +246,5 @@ module.exports = {
   getCommentsHandler,
   updateCommentHandler,
   deleteCommentHandler,
+  getAllCommentsForAdmin,
 };

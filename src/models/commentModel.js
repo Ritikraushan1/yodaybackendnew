@@ -126,6 +126,20 @@ const updateComment = async ({ commentId, userId, text, emoji, imageUrl }) => {
   }
 };
 
+const deleteCommentById = async (commentId) => {
+  const query = `
+      DELETE FROM comments
+      WHERE comment_id = $1
+      RETURNING *;
+    `;
+  const { rows } = await pool.query(query, [commentId]);
+  if (rows.length === 0) {
+    return { success: false, message: "Comment not found or not authorized" };
+  }
+
+  return { success: true, comment: rows[0] };
+};
+
 const deleteComment = async ({ commentId, userId }) => {
   try {
     if (!commentId || !userId) {
@@ -157,4 +171,5 @@ module.exports = {
   getCommentsByPost,
   updateComment,
   deleteComment,
+  deleteCommentById,
 };

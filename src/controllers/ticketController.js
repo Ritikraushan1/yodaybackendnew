@@ -6,6 +6,8 @@ const {
   addReplyToTicket,
   deleteTicketById,
 } = require("../models/ticketModel");
+const { findUserProfileById } = require("../models/userProfileModel");
+const { getUserProfileById } = require("./userController");
 
 // 1️⃣ Create a new ticket
 const createTicketHandler = async (req, res) => {
@@ -40,6 +42,7 @@ const createTicketHandler = async (req, res) => {
 const getAllTicketsHandler = async (req, res) => {
   try {
     const ticketsData = await getAllTickets();
+
     if (!ticketsData.success) {
       return res.status(500).json({ message: ticketsData.message });
     }
@@ -47,6 +50,43 @@ const getAllTicketsHandler = async (req, res) => {
     return res.status(200).json({ tickets: ticketsData.tickets });
   } catch (error) {
     console.error("❌ Error in getAllTicketsHandler:", error.message);
+    return res.status(500).json({ message: "Try again later after sometime" });
+  }
+};
+const getAllTicketsHandlerAdmin = async (req, res) => {
+  try {
+    const ticketsData = await getAllTickets();
+
+    if (!ticketsData.success) {
+      return res.status(400).json({ message: ticketsData.message });
+    }
+
+    const tickets = ticketsData.tickets;
+
+    // ✅ If there are no tickets
+    if (!tickets || tickets.length === 0) {
+      return res.json({ tickets: [] });
+    }
+
+    // ✅ Fetch user data for each ticket
+    const enrichedTickets = await Promise.all(
+      tickets.map(async (ticket) => {
+        const user = await findUserProfileById(ticket.raised_by);
+
+        return {
+          ...ticket,
+          user_name: user?.name || "Unknown User",
+          email: user?.email || null,
+          avatar: user?.avatar || null,
+          login_method: user?.login_method || null,
+          mobile_number: user?.mobile_number || null,
+        };
+      })
+    );
+
+    return { tickets: enrichedTickets };
+  } catch (error) {
+    console.error("❌ Error in getAllTicketsHandlerAdmin:", error.message);
     return res.status(500).json({ message: "Try again later after sometime" });
   }
 };
@@ -146,6 +186,7 @@ const deleteTicketHandler = async (req, res) => {
 module.exports = {
   createTicketHandler,
   getAllTicketsHandler,
+  getAllTicketsHandlerAdmin,
   getTicketsByUserHandler,
   updateTicketHandler,
   addReplyHandler,

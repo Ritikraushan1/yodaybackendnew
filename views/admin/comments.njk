@@ -2,29 +2,201 @@
 {% set active = "comments" %}
 
 {% block content %}
-<h1 class="text-3xl font-bold mb-6">All Comments</h1>
-<div class="bg-white p-6 rounded-2xl shadow-lg">
+<h1 class="text-3xl font-bold mb-6">All Comments for Post {{ postCode }}</h1>
+
+<!-- Alert -->
+<div id="alertBox" class="hidden mb-4 p-3 rounded-lg text-white text-sm font-medium"></div>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg overflow-x-auto">
   <table class="w-full text-left border-collapse">
-    <thead>
-      <tr class="border-b">
+    <thead class="border-b bg-gray-50 text-sm text-gray-600">
+      <tr>
         <th class="p-2">ID</th>
-        <th class="p-2">Post</th>
+        <th class="p-2">Post Code</th>
         <th class="p-2">User</th>
         <th class="p-2">Comment</th>
+        <th class="p-2 text-center">Likes</th>
+        <th class="p-2">Created At</th>
+        <th class="p-2 text-center">Actions</th>
       </tr>
     </thead>
     <tbody>
-      {% for comment in comments %}
-      <tr class="border-b">
-        <td class="p-2">{{ comment.id }}</td>
-        <td class="p-2">{{ comment.postTitle }}</td>
-        <td class="p-2">{{ comment.userName }}</td>
-        <td class="p-2">{{ comment.content }}</td>
-      </tr>
+      {% if comments and comments.length %}
+        {% for comment in comments %}
+        <tr id="comment-{{ comment.comment_id }}" class="border-b align-top hover:bg-gray-50 transition">
+          <!-- Comment ID -->
+          <td class="p-2 text-xs text-gray-500 break-all">
+            {{ comment.comment_id }}
+          </td>
+
+          <td class="p-2 text-xs text-gray-500 break-all">
+            {{ comment.post_id }}
+          </td>
+
+          <!-- User -->
+          <td class="p-2">
+            <div class="flex items-center space-x-2">
+              {% if comment.useravatar %}
+                <img src="{{ comment.useravatar }}" alt="avatar" class="w-8 h-8 rounded-full border">
+              {% endif %}
+              <span class="font-medium">{{ comment.username or "Unknown User" }}</span>
+            </div>
+          </td>
+
+          <!-- Comment text / media / replies -->
+          <td class="p-2">
+            {% if comment.text %}
+              <p class="mb-1">{{ comment.text }}</p>
+            {% endif %}
+
+            {% if comment.image_url %}
+              <button
+                class="text-blue-600 text-sm underline hover:text-blue-800"
+                onclick="openImageModal('{{ comment.image_url }}')"
+              >
+                View Image
+              </button>
+            {% endif %}
+
+            {% if comment.emoji %}
+              <span class="text-2xl">{{ comment.emoji }}</span>
+            {% endif %}
+
+            {% if comment.replies and comment.replies.length %}
+              <details class="mt-2">
+                <summary class="cursor-pointer text-blue-600 text-sm">
+                  {{ comment.replies.length }}
+                  {% if comment.replies.length == 1 %}Reply{% else %}Replies{% endif %}
+                </summary>
+                <ul class="pl-4 mt-1 space-y-2">
+                  {% for reply in comment.replies %}
+                  <li class="border-l-2 border-gray-200 pl-2">
+                    <div class="flex items-center space-x-2">
+                      {% if reply.useravatar %}
+                        <img src="{{ reply.useravatar }}" alt="reply avatar" class="w-6 h-6 rounded-full">
+                      {% endif %}
+                      <strong class="text-sm">{{ reply.username or "Unknown User" }}</strong>
+                    </div>
+                    {% if reply.text %}
+                      <p class="text-sm mt-1">{{ reply.text }}</p>
+                    {% endif %}
+                    {% if reply.image_url %}
+                      <button
+                        class="text-blue-600 text-xs underline hover:text-blue-800"
+                        onclick="openImageModal('{{ reply.image_url }}')"
+                      >
+                        View Image
+                      </button>
+                    {% endif %}
+                  </li>
+                  {% endfor %}
+                </ul>
+              </details>
+            {% endif %}
+          </td>
+
+          <!-- Likes -->
+          <td class="p-2 text-center">
+            {{ comment.likes or 0 }}
+          </td>
+
+          <!-- Created date -->
+          <td class="p-2 text-sm text-gray-500">
+            {% if comment.created_at %}
+              {{ comment.created_at.toISOString().slice(0, 19).replace('T', ' ') }}
+            {% else %}
+              —
+            {% endif %}
+          </td>
+
+          <!-- Actions -->
+          <td class="p-2 text-center">
+            <button
+              class="text-red-600 hover:text-red-800 font-semibold text-sm"
+              onclick="deleteComment('{{ comment.comment_id }}')"
+            >
+              Delete
+            </button>
+          </td>
+        </tr>
+        {% endfor %}
       {% else %}
-      <tr><td colspan="4" class="p-4 text-center text-gray-500 italic">No comments found</td></tr>
-      {% endfor %}
+        <tr>
+          <td colspan="7" class="p-4 text-center text-gray-500 italic">
+            No comments found
+          </td>
+        </tr>
+      {% endif %}
     </tbody>
   </table>
 </div>
+
+<!-- Image Preview Modal -->
+<div
+  id="imageModal"
+  class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+  onclick="closeImageModal()"
+>
+  <div class="relative">
+    <img id="modalImage" src="" alt="Preview" class="max-w-3xl max-h-[80vh] rounded-lg shadow-lg">
+    <button
+      class="absolute top-2 right-2 bg-white rounded-full p-1 text-gray-800 hover:bg-gray-200"
+      onclick="closeImageModal()"
+    >
+      ✕
+    </button>
+  </div>
+</div>
+
+<script>
+  async function deleteComment(commentId) {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const res = await fetch(`/admin/comments/${commentId}/delete`, {
+        method: 'POST'
+      });
+
+      const data = await res.json();
+
+      if (res.ok && data.message) {
+        const row = document.getElementById(`comment-${commentId}`);
+        if (row) {
+          row.classList.add('bg-red-50', 'opacity-60');
+          setTimeout(() => row.remove(), 800);
+        }
+        showAlert('✅ ' + data.message, 'green');
+      } else {
+        showAlert('❌ Failed to delete comment', 'red');
+      }
+    } catch (err) {
+      console.error(err);
+      showAlert('⚠️ Error deleting comment', 'red');
+    }
+  }
+
+  function showAlert(message, color = 'green') {
+    const alertBox = document.getElementById('alertBox');
+    alertBox.textContent = message;
+    alertBox.className = `mb-4 p-3 rounded-lg text-white text-sm font-medium bg-${color}-600`;
+    alertBox.classList.remove('hidden');
+    setTimeout(() => {
+      alertBox.classList.add('hidden');
+    }, 2500);
+  }
+
+  function openImageModal(url) {
+    const modal = document.getElementById("imageModal");
+    const img = document.getElementById("modalImage");
+    img.src = url;
+    modal.classList.remove("hidden");
+  }
+
+  function closeImageModal() {
+    const modal = document.getElementById("imageModal");
+    const img = document.getElementById("modalImage");
+    img.src = "";
+    modal.classList.add("hidden");
+  }
+</script>
 {% endblock %}

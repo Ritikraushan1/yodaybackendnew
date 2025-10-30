@@ -17,9 +17,6 @@ const { generateToken } = require("../utils/jwtUtil");
 const axios = require("axios");
 
 const registerUser = async (req, res) => {
-  console.log("👉 Auth controller login hit");
-  console.log("Request body:", req.body);
-
   const { country_code, mobile_number } = req.body;
 
   if (!mobile_number) {
@@ -77,7 +74,7 @@ const registerUser = async (req, res) => {
       });
     }
   } catch (error) {
-    console.log("error message", error);
+    console.error("error message", error);
 
     return res.status(500).json({
       success: false,
@@ -87,8 +84,6 @@ const registerUser = async (req, res) => {
 };
 
 const resendOtp = async (req, res) => {
-  console.log("👉 Auth controller login hit");
-  console.log("Request body:", req.body);
   const { country_code, mobile_number } = req.body;
 
   if (!mobile_number) {
@@ -165,7 +160,6 @@ const verifyOtpController = async (req, res) => {
     const token = await generateToken(user.id);
 
     const user_profile = await findUserProfileById(user.id);
-    console.log("user_profile", user_profile);
 
     let response = {
       status: result?.status,
@@ -211,7 +205,6 @@ const refreshTokenController = async (req, res) => {
           .json({ login_again: true, message: "Invalid token" });
       }
     }
-    console.log("decoded", decoded);
 
     // Check if user still exists
     const { success, user, status, message } = await findUserById(
@@ -222,7 +215,6 @@ const refreshTokenController = async (req, res) => {
         .status(401)
         .json({ login_again: true, message: "User not found" });
     }
-    console.log("user", user);
 
     // Generate new token
     const newToken = await generateToken(user.id);
@@ -262,7 +254,6 @@ const facebookLoginController = async (req, res) => {
     });
 
     const fbUser = fbResponse.data;
-    console.log("✅ Facebook user:", fbUser);
 
     if (!fbUser.id) {
       return res
@@ -321,7 +312,6 @@ const facebookLoginController = async (req, res) => {
 
     // 🔹 Step 5: Fetch user profile
     let user_profile = await findUserProfileById(user.id);
-    console.log("user profile response", user_profile);
 
     if (!user_profile.user) {
       // Profile doesn’t exist → create one using Facebook data
