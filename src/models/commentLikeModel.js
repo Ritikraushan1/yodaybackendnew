@@ -2,56 +2,96 @@
 const { pool } = require("../config/db");
 
 /**
- * Add a like to a comment
- * @param {UUID} commentId
- * @param {UUID} userId
+ * Add or update a user's reaction to a comment
+ * - Inserts a new reaction if none exists
+ * - Updates the reaction if user changes it
+ * - Deletes the reaction if the same reaction is clicked again (toggle)
  */
-const addLike = async (commentId, userId) => {
+const addOrUpdateReaction = async (commentId, userId, reactionType) => {
   try {
-    const query = `
-      INSERT INTO comment_likes (comment_id, user_id)
-      VALUES ($1, $2)
-      RETURNING like_id, comment_id, user_id, created_at;
+    // Check if user has already reacted
+    const checkQuery = `
+      SELECT reaction_type 
+      FROM comment_likes 
+      WHERE comment_id = $1 AND user_id = $2;
     `;
-    const { rows } = await pool.query(query, [commentId, userId]);
-    return { success: true, like: rows[0] };
-  } catch (err) {
-    // Handle unique constraint violation (already liked)
-    if (err.code === "23505") {
-      return { success: false, message: "User has already liked this comment" };
+    const { rows: existing } = await pool.query(checkQuery, [
+      commentId,
+      userId,
+    ]);
+
+    if (existing.length > 0) {
+      const currentReaction = existing[0].reaction_type;
+
+      // If user taps same reaction → remove (toggle off)
+      if (currentReaction === reactionType) {
+        const deleteQuery = `
+          DELETE FROM comment_likes 
+          WHERE comment_id = $1 AND user_id = $2
+          RETURNING like_id;
+        `;
+        const { rows } = await pool.query(deleteQuery, [commentId, userId]);
+        return { success: true, action: "removed", deleted: rows[0] };
+      }
+
+      // Otherwise → update reaction type
+      const updateQuery = `
+        UPDATE comment_likes
+        SET reaction_type = $3, created_at = NOW()
+        WHERE comment_id = $1 AND user_id = $2
+        RETURNING like_id, comment_id, user_id, reaction_type, created_at;
+      `;
+      const { rows } = await pool.query(updateQuery, [
+        commentId,
+        userId,
+        reactionType,
+      ]);
+      return { success: true, action: "updated", reaction: rows[0] };
     }
-    console.error("❌ Error in addLike:", err.message);
-    return { success: false, message: "Database insert failed" };
+
+    // New reaction
+    const insertQuery = `
+      INSERT INTO comment_likes (comment_id, user_id, reaction_type)
+      VALUES ($1, $2, $3)
+      RETURNING like_id, comment_id, user_id, reaction_type, created_at;
+    `;
+    const { rows } = await pool.query(insertQuery, [
+      commentId,
+      userId,
+      reactionType,
+    ]);
+    return { success: true, action: "added", reaction: rows[0] };
+  } catch (err) {
+    console.error("❌ Error in addOrUpdateReaction:", err.message);
+    return { success: false, message: "Database operation failed" };
   }
 };
 
 /**
- * Get all likes for a comment
- * @param {UUID} commentId
+ * Get all reactions for a specific comment
  */
-const getLikesByComment = async (commentId) => {
+const getReactionsByComment = async (commentId) => {
   try {
     const query = `
-      SELECT cl.like_id, cl.comment_id, cl.user_id, cl.created_at, u.name AS username
+      SELECT cl.like_id, cl.comment_id, cl.user_id, cl.reaction_type, cl.created_at, 
+             u.name AS username
       FROM comment_likes cl
       JOIN user_profiles u ON u.id = cl.user_id
       WHERE cl.comment_id = $1
       ORDER BY cl.created_at ASC;
     `;
     const { rows } = await pool.query(query, [commentId]);
-    return { success: true, likes: rows };
+    return { success: true, reactions: rows };
   } catch (err) {
-    console.error("❌ Error in getLikesByComment:", err.message);
+    console.error("❌ Error in getReactionsByComment:", err.message);
     return { success: false, message: "Database query failed" };
   }
 };
 
 /**
- * Delete a like by comment_id and user_id
- * @param {UUID} commentId
- * @param {UUID} userId
+ * Remove user's reaction from a comment
  */
-const deleteLike = async (commentId, userId) => {
+const removeReaction = async (commentId, userId) => {
   try {
     const query = `
       DELETE FROM comment_likes
@@ -59,54 +99,62 @@ const deleteLike = async (commentId, userId) => {
       RETURNING like_id;
     `;
     const { rows } = await pool.query(query, [commentId, userId]);
+    if (rows.length === 0)
+      return { success: false, message: "No reaction found" };
 
-    if (rows.length === 0) {
-      return { success: false, message: "Like not found" };
-    }
-
-    return { success: true, message: "Like deleted successfully" };
+    return { success: true, message: "Reaction removed successfully" };
   } catch (err) {
-    console.error("❌ Error in deleteLike:", err.message);
+    console.error("❌ Error in removeReaction:", err.message);
     return { success: false, message: "Database delete failed" };
   }
 };
 
-const getLikeCount = async (commentId) => {
+/**
+ * Get total count of each reaction for a comment
+ */
+const getReactionSummary = async (commentId) => {
   try {
     const query = `
-      SELECT COUNT(*) AS like_count
+      SELECT reaction_type, COUNT(*) AS count
       FROM comment_likes
-      WHERE comment_id = $1;
+      WHERE comment_id = $1
+      GROUP BY reaction_type;
     `;
     const { rows } = await pool.query(query, [commentId]);
-    return { success: true, like_count: parseInt(rows[0].like_count, 10) };
+    return { success: true, summary: rows };
   } catch (err) {
-    console.error("❌ Error in getLikeCount:", err.message);
+    console.error("❌ Error in getReactionSummary:", err.message);
     return { success: false, message: "Database query failed" };
   }
 };
 
-const hasUserLikedComment = async (commentId, userId) => {
+/**
+ * Check if user has reacted to a specific comment
+ */
+const hasUserReacted = async (commentId, userId) => {
   try {
     const query = `
-      SELECT 1
+      SELECT reaction_type
       FROM comment_likes
       WHERE comment_id = $1 AND user_id = $2
       LIMIT 1;
     `;
     const { rows } = await pool.query(query, [commentId, userId]);
-
-    return { success: true, liked: rows.length > 0 };
+    return {
+      success: true,
+      reacted: rows.length > 0,
+      reaction_type: rows[0]?.reaction_type || null,
+    };
   } catch (err) {
-    console.error("❌ Error in hasUserLikedComment:", err.message);
+    console.error("❌ Error in hasUserReacted:", err.message);
     return { success: false, message: "Database query failed" };
   }
 };
 
 module.exports = {
-  addLike,
-  getLikesByComment,
-  deleteLike,
-  getLikeCount,
-  hasUserLikedComment,
+  addOrUpdateReaction,
+  getReactionsByComment,
+  removeReaction,
+  getReactionSummary,
+  hasUserReacted,
 };
