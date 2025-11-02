@@ -1,6 +1,6 @@
 const {
-  getLikeCount,
-  hasUserLikedComment,
+  getReactionSummary,
+  hasUserReacted,
 } = require("../models/commentLikeModel");
 const {
   addComment,
@@ -69,7 +69,7 @@ const addReplyHandler = async (req, res) => {
   }
 };
 
-// Get all comments for a post (with nested replies)
+// Get all comments for a post (with reactions + nested replies)
 const getCommentsHandler = async (req, res) => {
   try {
     const { postCode } = req.params;
@@ -81,34 +81,42 @@ const getCommentsHandler = async (req, res) => {
         .json({ message: "postCode is required in params" });
     }
 
-    // Fetch flat comments from model
     const commentsData = await getCommentsByPost(postCode);
-
     if (!commentsData.success) {
       return res.status(404).json({ message: commentsData.message });
     }
 
     const rows = commentsData.comments;
-
-    // Build threaded structure
     const commentsMap = {};
     const rootComments = [];
 
     for (const comment of rows) {
-      // Get like count for this comment
-      const likeResult = await getLikeCount(comment.comment_id);
-      comment.likes = likeResult.success ? likeResult.like_count : 0;
+      // ✅ Get total reactions grouped by type
+      const reactionResult = await getReactionSummary(comment.comment_id);
+      comment.reactionSummary = reactionResult.success
+        ? reactionResult.summary
+        : [];
 
-      // Check if current user liked it
+      // ✅ Compute total reactions (sum of counts)
+      comment.totalReactions = comment.reactionSummary.reduce(
+        (sum, r) => sum + Number(r.count),
+        0
+      );
+
+      // ✅ Check what reaction (if any) this user made
       if (userId) {
-        const likedResult = await hasUserLikedComment(
+        const userReactionResult = await hasUserReacted(
           comment.comment_id,
           userId
         );
-        comment.likedByUser = likedResult.success ? likedResult.liked : false;
+        comment.userReaction = userReactionResult.success
+          ? userReactionResult.reaction_type
+          : null;
       } else {
-        comment.likedByUser = false;
+        comment.userReaction = null;
       }
+
+      // ✅ Attach user info
       const userCommented = await findUserProfileById(comment.user_id);
       comment.username = userCommented?.user?.name || "";
       comment.useravatar = userCommented?.user?.avatar || "";
@@ -117,13 +125,9 @@ const getCommentsHandler = async (req, res) => {
       commentsMap[comment.comment_id] = comment;
 
       if (comment.parent_comment_id) {
-        // attach to parent
         const parent = commentsMap[comment.parent_comment_id];
-        if (parent) {
-          parent.replies.push(comment);
-        }
+        if (parent) parent.replies.push(comment);
       } else {
-        // top-level comment
         rootComments.push(comment);
       }
     }
@@ -135,11 +139,11 @@ const getCommentsHandler = async (req, res) => {
   }
 };
 
+// Admin view (no user-specific reaction info)
 const getAllCommentsForAdmin = async (postCode) => {
   const commentsData = await getCommentsByPost(postCode);
-
   if (!commentsData.success) {
-    return res.status(404).json({ message: commentsData.message });
+    return { comments: [], message: commentsData.message };
   }
 
   const rows = commentsData.comments;
@@ -147,9 +151,10 @@ const getAllCommentsForAdmin = async (postCode) => {
   const rootComments = [];
 
   for (const comment of rows) {
-    // Get like count for this comment
-    const likeResult = await getLikeCount(comment.comment_id);
-    comment.likes = likeResult.success ? likeResult.like_count : 0;
+    const reactionResult = await getReactionSummary(comment.comment_id);
+    comment.reactionSummary = reactionResult.success
+      ? reactionResult.summary
+      : [];
 
     const userCommented = await findUserProfileById(comment.user_id);
     comment.username = userCommented?.user?.name || "";
@@ -159,13 +164,9 @@ const getAllCommentsForAdmin = async (postCode) => {
     commentsMap[comment.comment_id] = comment;
 
     if (comment.parent_comment_id) {
-      // attach to parent
       const parent = commentsMap[comment.parent_comment_id];
-      if (parent) {
-        parent.replies.push(comment);
-      }
+      if (parent) parent.replies.push(comment);
     } else {
-      // top-level comment
       rootComments.push(comment);
     }
   }
