@@ -13,9 +13,8 @@
       <tr>
         <th class="p-2">ID</th>
         <th class="p-2">Post Code</th>
-        <th class="p-2">User</th>
         <th class="p-2">Comment</th>
-        <th class="p-2 text-center">Likes</th>
+        <th class="p-2 text-center">Report Count</th>
         <th class="p-2">Created At</th>
         <th class="p-2 text-center">Actions</th>
       </tr>
@@ -31,16 +30,6 @@
 
           <td class="p-2 text-xs text-gray-500 break-all">
             {{ comment.post_id }}
-          </td>
-
-          <!-- User -->
-          <td class="p-2">
-            <div class="flex items-center space-x-2">
-              {% if comment.useravatar %}
-                <img src="{{ comment.useravatar }}" alt="avatar" class="w-8 h-8 rounded-full border">
-              {% endif %}
-              <span class="font-medium">{{ comment.username or "Unknown User" }}</span>
-            </div>
           </td>
 
           <!-- Comment text / media / replies -->
@@ -97,13 +86,13 @@
 
           <!-- Likes -->
           <td class="p-2 text-center">
-            {{ comment.likes or 0 }}
+            {{ comment.total_reports or 0 }}
           </td>
 
           <!-- Created date -->
           <td class="p-2 text-sm text-gray-500">
-            {% if comment.created_at %}
-              {{ comment.created_at.toISOString().slice(0, 19).replace('T', ' ') }}
+            {% if comment.comment_created_at %}
+              {{ comment.comment_created_at.toISOString().slice(0, 19).replace('T', ' ') }}
             {% else %}
               —
             {% endif %}

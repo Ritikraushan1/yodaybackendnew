@@ -22,6 +22,9 @@ const {
   getAllTicketsHandler,
   getAllTicketsHandlerAdmin,
 } = require("../controllers/ticketController");
+const {
+  getReportedCommentsWithDetails,
+} = require("../models/CommentReportsModel");
 
 // Middleware to protect admin routes
 function requireAdmin(req, res, next) {
@@ -156,6 +159,24 @@ router.get("/users/deleted", requireAdmin, (req, res) => {
    =========================== */
 router.get("/comments", requireAdmin, (req, res) => {
   res.render("admin/comments.njk", { title: "Manage Comments" });
+});
+
+router.get("/comments/reported", requireAdmin, async (req, res) => {
+  const result = await getReportedCommentsWithDetails();
+  console.log("result ", result);
+
+  if (!result.success) {
+    return res.status(result.status || 500).render("admin/comments.njk", {
+      title: "Manage Reported Comments",
+      error: result.message || "Failed to fetch reported comments",
+      comments: [],
+    });
+  }
+
+  return res.render("admin/comments.njk", {
+    title: "Manage Reported Comments",
+    comments: result.reportedComments,
+  });
 });
 router.post("/comments/:commentId/delete", requireAdmin, async (req, res) => {
   const { commentId } = req.params;

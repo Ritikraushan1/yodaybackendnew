@@ -85,9 +85,55 @@ const getReportsByUserId = async (userId) => {
   }
 };
 
+const getReportedCommentsWithDetails = async () => {
+  try {
+    const query = `
+      SELECT
+        c.comment_id,
+        c.post_id,
+        c.user_id AS comment_owner_id,
+        c.text,
+        c.emoji,
+        c.image_url,
+        c.created_at AS comment_created_at,
+
+        COUNT(cr.*) AS total_reports,
+
+        -- All individual reports for this comment
+        json_agg(
+          json_build_object(
+            'report_id', cr.id,               -- assuming PK in comment_reports is "id"
+            'type', cr.type,
+            'subtype', cr.subtype,
+            'notes', cr.notes,
+            'reported_by', cr.reported_by,
+            'reported_at', cr.created_at
+          )
+          ORDER BY cr.created_at DESC
+        ) AS reports
+
+      FROM comment_reports cr
+      JOIN comments c ON c.comment_id = cr.comment_id
+      GROUP BY c.comment_id
+      ORDER BY total_reports DESC, comment_created_at DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return { success: true, reportedComments: rows };
+  } catch (err) {
+    console.error("❌ Error in getReportedCommentsWithDetails:", err.message);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to fetch reported comments",
+    };
+  }
+};
+
 module.exports = {
   createReport,
   getAllReports,
   getReportsByCommentId,
   getReportsByUserId,
+  getReportedCommentsWithDetails,
 };
