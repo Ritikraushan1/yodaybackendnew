@@ -181,6 +181,48 @@ const registerNewUser = async (userData) => {
   }
 };
 
+const updateUser = async (id, updateData) => {
+  try {
+    const query = `
+      UPDATE users SET
+        app_version = $1,
+        push_token = $2,
+        device_os = $3,
+        os_version = $4,
+        device_model = $5,
+        device_name = $6,
+        user_agent = $7,
+        device_id = $8,
+        modified_at = NOW()
+      WHERE id = $9 AND is_deleted = FALSE
+      RETURNING *;
+    `;
+
+    const values = [
+      updateData.app_version || null,
+      updateData.push_token || null,
+      updateData.device_os || null,
+      updateData.os_version || null,
+      updateData.device_model || null,
+      updateData.device_name || null,
+      updateData.user_agent || null,
+      updateData.device_id || null,
+      id,
+    ];
+
+    const { rows } = await pool.query(query, values);
+
+    return { success: true, user: rows[0] || null };
+  } catch (err) {
+    console.error("❌ Error in updateUser:", err.message);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to update user info",
+    };
+  }
+};
+
 const deleteUserById = async (id) => {
   try {
     // fetch the current user
@@ -223,4 +265,5 @@ module.exports = {
   registerFacebookUser,
   updateFacebookUser,
   findUserByFacebookId,
+  updateUser,
 };

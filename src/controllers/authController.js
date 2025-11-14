@@ -7,6 +7,7 @@ const {
   registerFacebookUser,
   updateFacebookUser,
   findUserById,
+  updateUser,
 } = require("../models/authModel");
 const {
   findUserProfileById,
@@ -17,7 +18,7 @@ const { generateToken } = require("../utils/jwtUtil");
 const axios = require("axios");
 
 const registerUser = async (req, res) => {
-  const { country_code, mobile_number } = req.body;
+  const { country_code, mobile_number, device_info } = req.body;
 
   if (!mobile_number) {
     return res.status(400).json({
@@ -31,6 +32,7 @@ const registerUser = async (req, res) => {
     );
 
     if (user) {
+      await updateUser(user.id, device_info);
       const otpResult = await sendOtp({ mobile_number, country_code });
 
       if (otpResult.status !== "success") {
@@ -50,6 +52,7 @@ const registerUser = async (req, res) => {
       const registerResult = await registerNewUser({
         mobile_number,
         country_code,
+        ...device_info,
       });
 
       if (!registerResult.success) {
