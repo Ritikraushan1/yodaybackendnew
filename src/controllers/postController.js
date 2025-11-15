@@ -11,6 +11,7 @@ const {
   getReactionCounts,
   getUserReaction,
 } = require("../models/postLikesModel");
+const { notifyAllUsersInBackground } = require("../utils/backgroundNotifier");
 
 const createPostHandler = async (req, res) => {
   try {
@@ -33,10 +34,15 @@ const createPostHandler = async (req, res) => {
     });
 
     if (createdPosts.success) {
+      notifyAllUsersInBackground(
+        "New Post is here! React fast!",
+        createdPosts.post.content || "New post published!"
+      );
       // HTML form → redirect
       if (req.headers.accept && req.headers.accept.includes("text/html")) {
         return res.redirect("/admin/posts?success=1");
       }
+
       // API client → JSON
       return res.status(200).json({ post: createdPosts.post });
     } else {

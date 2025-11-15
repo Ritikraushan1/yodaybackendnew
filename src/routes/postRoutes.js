@@ -22,7 +22,7 @@ router.get("/", authMiddleware, getAllPostsHandler);
 router.get("/search", authMiddleware, getSearchedPostsHandler);
 router.get("/:id", authMiddleware, getPostByCodeHandler);
 router.put("/:id", authMiddleware, updatePostHandler);
-router.delete("/:id", authMiddleware, deletePostHandler);
+router.get("/:id/delete", ensureAdmin, deletePostHandler);
 
 router.post("/:postId/react", authMiddleware, addReactionHandler);
 router.delete("/:postId/react", authMiddleware, removeReactionHandler);

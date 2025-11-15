@@ -257,6 +257,52 @@ const deleteUserById = async (id) => {
   }
 };
 
+// Fetch all active users (not deleted)
+const getAllActiveUsers = async () => {
+  try {
+    const query = `
+      SELECT *
+      FROM users
+      WHERE is_deleted = FALSE
+      ORDER BY id DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return { success: true, users: rows };
+  } catch (err) {
+    console.error("❌ Error in getAllActiveUsers:", err.message);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to fetch active users",
+    };
+  }
+};
+
+// Fetch only id + push_token for active users
+const getAllActiveUsersPushTokens = async () => {
+  try {
+    const query = `
+      SELECT id, push_token
+      FROM users
+      WHERE is_deleted = FALSE
+        AND push_token IS NOT NULL
+        AND push_token != ''
+      ORDER BY id DESC;
+    `;
+
+    const { rows } = await pool.query(query);
+    return { success: true, users: rows };
+  } catch (err) {
+    console.error("❌ Error in getAllActiveUsersPushTokens:", err.message);
+    return {
+      success: false,
+      status: 500,
+      message: "Failed to fetch push tokens",
+    };
+  }
+};
+
 module.exports = {
   findUserByMobile,
   registerNewUser,
@@ -266,4 +312,6 @@ module.exports = {
   updateFacebookUser,
   findUserByFacebookId,
   updateUser,
+  getAllActiveUsers,
+  getAllActiveUsersPushTokens,
 };
