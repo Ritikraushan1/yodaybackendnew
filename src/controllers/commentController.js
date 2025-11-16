@@ -147,9 +147,8 @@ const getAllCommentsForAdmin = async (postCode) => {
   }
 
   const rows = commentsData.comments;
-  const commentsMap = {};
-  const rootComments = [];
 
+  // Load metadata first
   for (const comment of rows) {
     const reactionResult = await getReactionSummary(comment.comment_id);
     comment.reactionSummary = reactionResult.success
@@ -159,17 +158,27 @@ const getAllCommentsForAdmin = async (postCode) => {
     const userCommented = await findUserProfileById(comment.user_id);
     comment.username = userCommented?.user?.name || "";
     comment.useravatar = userCommented?.user?.avatar || "";
-
-    comment.replies = [];
-    commentsMap[comment.comment_id] = comment;
-
-    if (comment.parent_comment_id) {
-      const parent = commentsMap[comment.parent_comment_id];
-      if (parent) parent.replies.push(comment);
-    } else {
-      rootComments.push(comment);
-    }
   }
+
+  // ------- FIX: Build map first ---------
+  const commentsMap = {};
+  rows.forEach((c) => {
+    c.replies = [];
+    commentsMap[c.comment_id] = c;
+  });
+
+  // ------- FIX: Second pass: attach replies properly ---------
+  const rootComments = [];
+  rows.forEach((c) => {
+    if (c.parent_comment_id) {
+      const parent = commentsMap[c.parent_comment_id];
+      if (parent) {
+        parent.replies.push(c);
+      }
+    } else {
+      rootComments.push(c);
+    }
+  });
 
   return { comments: rootComments };
 };

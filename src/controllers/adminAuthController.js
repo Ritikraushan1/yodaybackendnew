@@ -29,6 +29,8 @@ exports.handleLogin = async (req, res) => {
 
     // Generate OTP
     const otp = generateOtp();
+    // console.log("otp", otp);
+
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 minutes
 
     // Save OTP in database

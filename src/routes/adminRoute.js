@@ -82,14 +82,10 @@ router.get("/posts/:postCode/comments", requireAdmin, async (req, res) => {
 
     const response = await getAllCommentsForAdmin(postCode);
 
-    // If getCommentsHandler returns JSON directly,
-    // you might want to refactor it to return data instead of sending res.
-    // Alternatively, replicate the core logic here:
-
-    // Example: if getCommentsHandler sends JSON, handle it like:
     if (res.headersSent) return; // avoid double response
 
     const commentsData = response?.comments || [];
+    console.log("response", response);
 
     res.render("admin/comments.njk", {
       title: `Comments for ${postCode}`,
