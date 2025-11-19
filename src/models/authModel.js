@@ -237,7 +237,7 @@ const deleteUserById = async (id) => {
     const oldMobile = rows[0].mobile_number;
 
     // Handle NULL mobile numbers safely
-    const newMobile = oldMobile ? `deleted-${oldMobile}` : `deleted-user-${id}`; // fallback
+    const newMobile = oldMobile ? `deleted-${oldMobile}` : `deleted-facebook`; // fallback
 
     // soft delete update
     const updateQuery = `
