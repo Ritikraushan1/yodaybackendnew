@@ -241,13 +241,16 @@ const deleteUserById = async (id) => {
 
     // soft delete update
     const updateQuery = `
-      UPDATE users
-      SET is_deleted = TRUE,
+        UPDATE users
+        SET 
+          is_deleted = TRUE,
           mobile_number = $1,
+          facebook_id = NULL,
+          facebook_token = NULL,
           modified_at = NOW()
-      WHERE id = $2
-      RETURNING *;
-    `;
+        WHERE id = $2
+        RETURNING *;
+      `;
 
     await pool.query(updateQuery, [newMobile, id]);
 
