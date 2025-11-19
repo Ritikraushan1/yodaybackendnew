@@ -235,8 +235,9 @@ const deleteUserById = async (id) => {
     }
 
     const oldMobile = rows[0].mobile_number;
-    const randomNumber = Math.floor(10 + Math.random() * 90); // e.g., 51729
-    const newMobile = `deleted-${oldMobile}`;
+
+    // Handle NULL mobile numbers safely
+    const newMobile = oldMobile ? `deleted-${oldMobile}` : `deleted-user-${id}`; // fallback
 
     // soft delete update
     const updateQuery = `
@@ -248,7 +249,7 @@ const deleteUserById = async (id) => {
       RETURNING *;
     `;
 
-    const { rows: updated } = await pool.query(updateQuery, [newMobile, id]);
+    await pool.query(updateQuery, [newMobile, id]);
 
     return { success: true };
   } catch (err) {
