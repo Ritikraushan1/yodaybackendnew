@@ -1,11 +1,14 @@
 const { v4: uuidv4 } = require("uuid");
 const { insertOtpLog, getOtp, markOtpVerified } = require("../models/otpModel");
+const { sendOtpToMobile } = require("../services/smsService");
 
 const generateOtp = () =>
   Math.floor(100000 + Math.random() * 900000).toString();
 
 const sendOtp = async ({ mobile_number, country_code = "+91" }) => {
-  const otp = generateOtp();
+  // 👉 FIX: special OTP for specific test number
+  const otp = mobile_number === "7632049117" ? "123456" : generateOtp();
+
   const transaction_id = uuidv4();
 
   // Insert OTP log in DB
@@ -22,6 +25,17 @@ const sendOtp = async ({ mobile_number, country_code = "+91" }) => {
       transaction_id: null,
       otp: null,
       message: "Failed to send OTP. Try again Later",
+    };
+  }
+
+  const smsSent = await sendOtpToMobile(otp, mobile_number);
+
+  if (!smsSent) {
+    return {
+      status: "failed",
+      transaction_id,
+      otp: null,
+      message: "Failed to send OTP SMS. Please try again.",
     };
   }
 
