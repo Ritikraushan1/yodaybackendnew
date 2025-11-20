@@ -60,12 +60,20 @@ app.get("/health", (req, res) => {
   res.json({ status: "ok", message: "Server is running fine" });
 });
 
-// app.get("/admin", (req, res) => {
-//   res.render("admin/dashboard.njk", {
-//     title: "Admin Dashboard",
-//     user: { name: "Admin User", role: "Superadmin" },
-//   });
-// });
+app.get("/app-status", (req, res) => {
+  res.json({
+    android: {
+      version: "1.3",
+      forceUpdate: true,
+      forceUpdateLink: "https://your-android-update-link.com",
+    },
+    ios: {
+      version: "1.3",
+      forceUpdate: true,
+      forceUpdateLink: "https://your-ios-update-link.com",
+    },
+  });
+});
 
 app.use("/api", apiApp);
 app.use("/admin", adminRoute);
