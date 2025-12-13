@@ -1,4 +1,5 @@
 const { pool } = require("../config/db");
+const { archiveDeletedComment } = require("./deletedCommentModel");
 
 const addComment = async ({ postCode, userId, text, emoji, imageUrl }) => {
   try {
@@ -126,42 +127,100 @@ const updateComment = async ({ commentId, userId, text, emoji, imageUrl }) => {
   }
 };
 
-const deleteCommentById = async (commentId) => {
-  const query = `
-      DELETE FROM comments
-      WHERE comment_id = $1
-      RETURNING *;
-    `;
-  const { rows } = await pool.query(query, [commentId]);
-  if (rows.length === 0) {
-    return { success: false, message: "Comment not found or not authorized" };
+const deleteCommentById = async ({
+  commentId,
+  deletedBy,
+  deleteReason = null,
+}) => {
+  if (!commentId || !deletedBy) {
+    return {
+      success: false,
+      message: "commentId and deletedBy are required",
+    };
   }
 
-  return { success: true, comment: rows[0] };
+  const client = await pool.connect();
+
+  try {
+    await client.query("BEGIN");
+
+    const { rows } = await client.query(
+      `SELECT * FROM comments WHERE comment_id = $1`,
+      [commentId]
+    );
+
+    if (!rows.length) {
+      await client.query("ROLLBACK");
+      return { success: false, message: "Comment not found" };
+    }
+
+    const comment = rows[0];
+
+    // ✅ USE ARCHIVE FUNCTION
+    const archive = await archiveDeletedComment(
+      { comment, deletedBy, deleteReason },
+      client
+    );
+
+    if (!archive.success) throw new Error("Archive failed");
+
+    await client.query(`DELETE FROM comments WHERE comment_id = $1`, [
+      commentId,
+    ]);
+
+    await client.query("COMMIT");
+    return { success: true, comment };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    console.error("❌ Error in deleteCommentById:", err.message);
+    return { success: false, status: 500, message: "Admin delete failed" };
+  } finally {
+    client.release();
+  }
 };
 
 const deleteComment = async ({ commentId, userId }) => {
+  if (!commentId || !userId) {
+    return { success: false, message: "commentId and userId are required" };
+  }
+
+  const client = await pool.connect();
+
   try {
-    if (!commentId || !userId) {
-      return { success: false, message: "commentId and userId are required" };
-    }
+    await client.query("BEGIN");
 
-    const query = `
-      DELETE FROM comments
-      WHERE comment_id = $1 AND user_id = $2
-      RETURNING *;
-    `;
+    const { rows } = await client.query(
+      `SELECT * FROM comments WHERE comment_id = $1 AND user_id = $2`,
+      [commentId, userId]
+    );
 
-    const { rows } = await pool.query(query, [commentId, userId]);
-
-    if (rows.length === 0) {
+    if (!rows.length) {
+      await client.query("ROLLBACK");
       return { success: false, message: "Comment not found or not authorized" };
     }
 
-    return { success: true, comment: rows[0] };
+    const comment = rows[0];
+
+    // ✅ USE ARCHIVE FUNCTION
+    const archive = await archiveDeletedComment(
+      { comment, deletedBy: userId },
+      client
+    );
+
+    if (!archive.success) throw new Error("Archive failed");
+
+    await client.query(`DELETE FROM comments WHERE comment_id = $1`, [
+      commentId,
+    ]);
+
+    await client.query("COMMIT");
+    return { success: true, comment };
   } catch (err) {
+    await client.query("ROLLBACK");
     console.error("❌ Error in deleteComment:", err.message);
-    return { success: false, status: 500, message: "Database delete failed" };
+    return { success: false, status: 500, message: "Delete failed" };
+  } finally {
+    client.release();
   }
 };
 

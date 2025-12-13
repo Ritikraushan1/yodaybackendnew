@@ -231,7 +231,7 @@ const deleteUserById = async (id) => {
     const { rows } = await pool.query(selectQuery, [id]);
 
     if (rows.length === 0) {
-      return { success: false, message: "User not found or already deleted" };
+      return { success: true, message: "User not found or already deleted" };
     }
 
     const oldMobile = rows[0].mobile_number;

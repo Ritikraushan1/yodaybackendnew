@@ -25,6 +25,7 @@ const {
 const {
   getReportedCommentsWithDetails,
 } = require("../models/CommentReportsModel");
+const { getAllDeletedComments } = require("../models/deletedCommentModel");
 
 // Middleware to protect admin routes
 function requireAdmin(req, res, next) {
@@ -174,14 +175,66 @@ router.get("/comments/reported", requireAdmin, async (req, res) => {
     comments: result.reportedComments,
   });
 });
-router.post("/comments/:commentId/delete", requireAdmin, async (req, res) => {
-  const { commentId } = req.params;
 
-  const response = await deleteCommentById(commentId);
-  if (response.success) {
-    return res.status(200).json({
-      message: "Comments deleted successfully",
+router.get("/comments/deleted", requireAdmin, async (req, res) => {
+  try {
+    const result = await getAllDeletedComments();
+    console.log("deleted comments result:", result);
+
+    if (!result.success) {
+      return res
+        .status(result.status || 500)
+        .render("admin/deleted-comments.njk", {
+          title: "Manage Deleted Comments",
+          error: result.message || "Failed to fetch deleted comments",
+          comments: [],
+        });
+    }
+
+    // 🔥 SORT: latest deleted first
+    const sortedComments = result.deletedComments.sort(
+      (a, b) => new Date(b.deleted_at) - new Date(a.deleted_at)
+    );
+
+    return res.render("admin/deleted-comments.njk", {
+      title: "Manage Deleted Comments",
+      comments: sortedComments,
     });
+  } catch (err) {
+    console.error("Error fetching deleted comments:", err);
+
+    return res.status(500).render("admin/deleted-comments.njk", {
+      title: "Manage Deleted Comments",
+      error: "Something went wrong",
+      comments: [],
+    });
+  }
+});
+
+router.post("/comments/:commentId/delete", requireAdmin, async (req, res) => {
+  try {
+    const { commentId } = req.params;
+    console.log("admin user", req.session.admin);
+
+    const adminId = req.session.admin.id; // or req.user.id depending on your auth
+
+    const response = await deleteCommentById({
+      commentId,
+      deletedBy: adminId,
+    });
+
+    if (!response.success) {
+      return res
+        .status(response.status || 400)
+        .json({ message: response.message });
+    }
+
+    return res.status(200).json({
+      message: "Comment deleted successfully",
+    });
+  } catch (err) {
+    console.error("❌ Admin delete route error:", err.message);
+    return res.status(500).json({ message: "Internal server error" });
   }
 });
 

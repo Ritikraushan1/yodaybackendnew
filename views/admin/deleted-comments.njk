@@ -1,0 +1,110 @@
+{% extends "admin/layout.njk" %}
+{% set active = "comments" %}
+
+{% block content %}
+
+<h1 class="text-3xl font-bold mb-6">Deleted Comments</h1>
+
+<div class="bg-white p-6 rounded-2xl shadow-lg overflow-x-auto">
+  <table class="w-full text-left border-collapse">
+    <thead class="border-b bg-gray-50 text-sm text-gray-600">
+      <tr>
+        <th class="p-2">Comment ID</th>
+        <th class="p-2">Post Code</th>
+        <th class="p-2">Comment</th>
+        <th class="p-2">Commented By</th>
+        <th class="p-2">Deleted By</th>
+        <th class="p-2">Deleted At</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      {% if comments and comments.length %}
+        {% for comment in comments %}
+          <tr class="border-b hover:bg-gray-50 transition align-top">
+
+            <!-- Comment ID -->
+            <td class="p-2 text-xs text-gray-500 break-all">
+              {{ loop.index }}
+            </td>
+
+            <!-- Post Code -->
+            <td class="p-2 text-xs text-gray-500 break-all">
+              {{ comment.post_id }}
+            </td>
+
+            <!-- Comment Content -->
+            <td class="p-2">
+              {% if comment.text %}
+                <p class="mb-1">{{ comment.text }}</p>
+              {% endif %}
+
+              {% if comment.image_url %}
+                <button
+                  class="text-blue-600 text-sm underline hover:text-blue-800"
+                  onclick="openImageModal('{{ comment.image_url }}')">
+                  View Image
+                </button>
+              {% endif %}
+
+              {% if comment.emoji %}
+                <span class="text-2xl">{{ comment.emoji }}</span>
+              {% endif %}
+            </td>
+            <td class="p-2 text-sm text-gray-700 break-all">
+              {{ comment.user_id }}
+            </td>
+
+            <!-- Deleted By -->
+            <td class="p-2 text-sm text-gray-700 break-all">
+              {{ comment.deleted_by }}
+            </td>
+
+            <!-- Deleted At -->
+            <td class="p-2 text-sm text-gray-500">
+              {% if comment.deleted_at %}
+                {{ comment.deleted_at.toISOString().slice(0, 19).replace('T', ' ') }}
+              {% else %}
+                —
+              {% endif %}
+            </td>
+
+          </tr>
+        {% endfor %}
+      {% else %}
+        <tr>
+          <td colspan="5" class="p-4 text-center text-gray-500 italic">
+            No deleted comments found
+          </td>
+        </tr>
+      {% endif %}
+    </tbody>
+  </table>
+</div>
+
+<!-- Image Modal -->
+<div id="imageModal"
+  class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
+  onclick="closeImageModal()">
+
+  <div class="relative">
+    <img id="modalImage" class="max-w-3xl max-h-[80vh] rounded-lg shadow-lg" />
+    <button
+      class="absolute top-2 right-2 bg-white rounded-full p-1 text-gray-800"
+      onclick="closeImageModal()">✕</button>
+  </div>
+</div>
+
+<script>
+  function openImageModal(url) {
+    document.getElementById("modalImage").src = url;
+    document.getElementById("imageModal").classList.remove("hidden");
+  }
+
+  function closeImageModal() {
+    document.getElementById("modalImage").src = "";
+    document.getElementById("imageModal").classList.add("hidden");
+  }
+</script>
+
+{% endblock %}
