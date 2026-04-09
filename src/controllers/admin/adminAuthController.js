@@ -1,6 +1,6 @@
-const { getAdminByEmail } = require("../models/adminModel");
-const { saveAdminOtp, getLatestAdminOtp } = require("../models/adminOtpModel");
-const { sendOtpEmail } = require("../services/emailservice");
+const { getAdminByEmail } = require("../../models/adminModel");
+const { saveAdminOtp, getLatestAdminOtp } = require("../../models/adminOtpModel");
+const { sendOtpEmail } = require("../../services/emailservice");
 
 // Generate 6-digit OTP
 function generateOtp() {
@@ -29,7 +29,7 @@ exports.handleLogin = async (req, res) => {
 
     // Generate OTP
     const otp = generateOtp();
-    // console.log("otp", otp);
+    console.log("otp", otp);
 
     const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // expires in 5 minutes
 

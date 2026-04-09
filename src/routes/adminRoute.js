@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const adminAuthController = require("../controllers/adminAuthController");
+const adminAuthController = require("../controllers/admin/adminAuthController");
+const adminStatsController = require("../controllers/admin/adminStatsController");
 const { ensureAdmin } = require("../middlewares/authMiddleware");
 const {
   createPostHandler,
@@ -42,12 +43,7 @@ router.post("/verify", adminAuthController.verifyOtp);
 router.get("/logout", adminAuthController.logout);
 
 // Dashboard
-router.get("/dashboard", requireAdmin, (req, res) => {
-  res.render("admin/dashboard.njk", {
-    title: "Admin Dashboard",
-    user: req.session.admin,
-  });
-});
+router.get("/dashboard", requireAdmin, adminStatsController.getDashboardStats);
 
 /* ===========================
    📌 POSTS MANAGEMENT
