@@ -81,7 +81,7 @@ const getCommentsHandler = async (req, res) => {
         .json({ message: "postCode is required in params" });
     }
 
-    const commentsData = await getCommentsByPost(postCode);
+    const commentsData = await getCommentsByPost(postCode, userId);
     if (!commentsData.success) {
       return res.status(404).json({ message: commentsData.message });
     }
@@ -89,6 +89,7 @@ const getCommentsHandler = async (req, res) => {
     const rows = commentsData.comments;
     const commentsMap = {};
     const rootComments = [];
+
 
     for (const comment of rows) {
       // ✅ Get total reactions grouped by type

@@ -16,7 +16,8 @@ const pool = new Pool({
 const connectDB = async () => {
   try {
     const client = await pool.connect();
-    createUsersTable();
+    await createUsersTable();
+    await createUserBlocksTable();
     console.log("✅ Connected to PostgreSQL database");
     client.release(); // release back to pool
   } catch (err) {
@@ -62,4 +63,24 @@ const createUsersTable = async () => {
   }
 };
 
+const createUserBlocksTable = async () => {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_blocks (
+        id SERIAL PRIMARY KEY,
+        blocker_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        blocked_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+        created_at TIMESTAMP DEFAULT NOW(),
+        CONSTRAINT unique_block UNIQUE (blocker_id, blocked_id),
+        CONSTRAINT chk_not_self_blocking CHECK (blocker_id != blocked_id)
+      );
+    `);
+    console.log("✅ User blocks table created successfully");
+  } catch (err) {
+    console.error("❌ Error creating user blocks table:", err.message);
+    process.exit(1);
+  }
+};
+
 module.exports = { connectDB, pool };
+

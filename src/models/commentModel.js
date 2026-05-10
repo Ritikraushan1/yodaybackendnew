@@ -69,21 +69,39 @@ const addReply = async ({ parentCommentId, userId, text, emoji, imageUrl }) => {
   }
 };
 
-const getCommentsByPost = async (postCode) => {
+const getCommentsByPost = async (postCode, currentUserId = null) => {
   try {
     if (!postCode) {
       return { success: false, message: "postCode is required" };
     }
 
-    // Fetch all comments for the post
-    const query = `
-      SELECT *
-      FROM comments c
-      WHERE c.post_id = $1
-      ORDER BY c.created_at;
-    `;
+    let query;
+    let params;
 
-    const { rows } = await pool.query(query, [postCode]);
+    if (currentUserId) {
+      query = `
+        SELECT c.*
+        FROM comments c
+        WHERE c.post_id = $1
+          AND NOT EXISTS (
+            SELECT 1 FROM user_blocks ub
+            WHERE (ub.blocker_id = $2 AND ub.blocked_id = c.user_id)
+               OR (ub.blocker_id = c.user_id AND ub.blocked_id = $2)
+          )
+        ORDER BY c.created_at;
+      `;
+      params = [postCode, currentUserId];
+    } else {
+      query = `
+        SELECT c.*
+        FROM comments c
+        WHERE c.post_id = $1
+        ORDER BY c.created_at;
+      `;
+      params = [postCode];
+    }
+
+    const { rows } = await pool.query(query, params);
 
     return { success: true, comments: rows };
   } catch (err) {
@@ -91,6 +109,7 @@ const getCommentsByPost = async (postCode) => {
     return { success: false, status: 500, message: "Database query failed" };
   }
 };
+
 
 const updateComment = async ({ commentId, userId, text, emoji, imageUrl }) => {
   try {
