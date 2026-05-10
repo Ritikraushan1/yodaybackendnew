@@ -65,6 +65,18 @@ const createUsersTable = async () => {
 
 const createUserBlocksTable = async () => {
   try {
+    // Ensure the 'id' field in 'users' has a unique constraint so it can be referenced as a foreign key.
+    // If the constraint already exists, Postgres will throw an error which we catch and ignore safely.
+    try {
+      await pool.query(`ALTER TABLE users ADD CONSTRAINT users_id_unique UNIQUE (id);`);
+      console.log("✅ Added unique constraint to users(id)");
+    } catch (err) {
+      // Ignore if the constraint already exists (error code 42P16 or containing 'already exists')
+      if (err.code !== "42P16" && !err.message.includes("already exists")) {
+        console.warn("⚠️ Warning adding unique constraint to users(id):", err.message);
+      }
+    }
+
     await pool.query(`
       CREATE TABLE IF NOT EXISTS user_blocks (
         id SERIAL PRIMARY KEY,
@@ -81,6 +93,7 @@ const createUserBlocksTable = async () => {
     process.exit(1);
   }
 };
+
 
 module.exports = { connectDB, pool };
 
